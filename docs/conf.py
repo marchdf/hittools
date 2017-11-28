@@ -20,7 +20,10 @@
 import os
 import sys
 sys.path.append(os.path.abspath('../ho_apriori'))
+sys.path.append(os.path.abspath('../ho_apriori/constants'))
 sys.path.append(os.path.abspath('../ho_apriori/velocity'))
+sys.path.append(os.path.abspath('../ho_apriori/sgs'))
+sys.path.append(os.path.abspath('../ho_apriori/fv'))
 
 # -- General configuration ------------------------------------------------
 

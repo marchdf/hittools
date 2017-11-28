@@ -11,6 +11,8 @@ Welcome to ho_apriori's documentation!
    :caption: Contents:
 
    velocity
+   sgs
+   fv
 
 
 Indices and tables

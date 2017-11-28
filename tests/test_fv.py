@@ -1,0 +1,57 @@
+# Copyright 2017 National Renewable Energy Laboratory. This software
+# is released under the license detailed in the file, LICENSE, which
+# is located in the top-level directory structure.
+
+import os
+import unittest
+import numpy as np
+import numpy.testing as npt
+import ho_apriori.velocity.velocity as velocity
+import ho_apriori.data.data as data
+import ho_apriori.fv.fv as fv
+
+
+class FVTestCase(unittest.TestCase):
+    """Tests for `fv.py`."""
+
+    def setUp(self):
+        parent = os.path.abspath(os.path.join(__file__, '../..'))
+        self.fname = os.path.abspath(os.path.join(
+            parent, 'ho_apriori', 'data', 'toy_data.npz'))
+
+        # Use the data class to create and output toy data
+        self.data = data.Data()
+        self.data.output_data(self.fname)
+
+        # Load the velocity fields from the toy data
+        self.velocities = velocity.Velocity()
+        self.velocities.read(self.fname)
+
+        # Define FV solution space
+        self.fv = fv.FV(2, np.pi / 8., self.velocities)
+
+    def test_projection(self):
+        """Is the FV projection correct?"""
+
+        self.fv.projection()
+        npt.assert_array_almost_equal(self.fv.U[0],
+                                      np.array([[[0.1111007024614374, -0.1111007024614374],
+                                                 [0.3163880325649341, -0.3163880325649344]],
+                                                [[0.0460194177487053, -0.0460194177487052],
+                                                 [0.1310522140609364, -0.1310522140609361]]]),
+                                      decimal=13)
+
+    def test_interpolation(self):
+        """Is the FV interpolation correct?"""
+
+        self.fv.interpolation()
+        npt.assert_array_almost_equal(self.fv.U[0],
+                                      np.array([[[0.1274488947760401, -0.1274488947760397],
+                                                 [0.3629437454255757, -0.3629437454255763]],
+                                                [[0.0527910607256974, -0.052791060725697],
+                                                 [0.1503362217337619, -0.1503362217337616]]]),
+                                      decimal=13)
+
+
+if __name__ == '__main__':
+    unittest.main()

@@ -134,3 +134,28 @@ class Velocity:
         """
 
         return np.fft.irfftn(1j * self.K[direction] * self.Ufh[velocity])
+
+    # ========================================================================
+    def get_interpolated_velocity(self, xi):
+        """
+        Return the velocity interpolated using the Fourier coefficients.
+
+        :param xi: coordinate of point
+        :type xi: array
+        :return: velocities interpolated at the point
+        :rtype: list
+
+        """
+
+        A = np.exp(2 * np.pi * 1j * (xi[0] * self.K[0] / self.L[0] +
+                                     xi[1] * self.K[1] / self.L[1] +
+                                     xi[2] * self.K[2] / self.L[2]))
+
+        ui = np.real(2. / np.prod(self.N)
+                     * np.sum(A * self.Uf[0]))
+        vi = np.real(2. / np.prod(self.N)
+                     * np.sum(A * self.Uf[1]))
+        wi = np.real(2. / np.prod(self.N)
+                     * np.sum(A * self.Uf[2]))
+
+        return [ui, vi, wi]

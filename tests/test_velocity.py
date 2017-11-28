@@ -7,6 +7,7 @@ import unittest
 import numpy as np
 import numpy.testing as npt
 import ho_apriori.velocity.velocity as velocity
+import ho_apriori.data.data as data
 
 
 class VelocityTestCase(unittest.TestCase):
@@ -16,9 +17,18 @@ class VelocityTestCase(unittest.TestCase):
         parent = os.path.abspath(os.path.join(__file__, '../..'))
         self.fname = os.path.abspath(os.path.join(
             parent, 'ho_apriori', 'data', 'toy_data.npz'))
+
+        # Use the data class to create and output toy data
+        self.data = data.Data()
+        self.data.output_data(self.fname)
+
+        # Load the velocity fields from the toy data
         self.velocities = velocity.Velocity()
         self.velocities.read(self.fname)
+
+        # Set some parameters
         self.width = 4
+        np.random.seed(1)
 
     def test_read(self):
         """Is the velocity loading function correct?"""
@@ -83,6 +93,26 @@ class VelocityTestCase(unittest.TestCase):
                                 44.330219039170167)
         npt.assert_almost_equal(np.linalg.norm(dwdz),
                                 88.660438078340349)
+
+    def test_get_interpolated_velocity(self):
+        """Is the interpolation of a function with DFT coefficients correct?"""
+
+        # Loop over random points in the domain
+        xis = np.random.uniform(low=0, high=2 * np.pi, size=(100, 3))
+        for xi in xis:
+
+            # Get the interpolated velocity using DFT coefficients
+            Ui = self.velocities.get_interpolated_velocity(xi)
+
+            npt.assert_allclose(Ui[0],
+                                data.velocity_x(xi),
+                                rtol=1e-11)
+            npt.assert_allclose(Ui[1],
+                                data.velocity_y(xi),
+                                rtol=1e-11)
+            npt.assert_allclose(Ui[2],
+                                data.velocity_z(xi),
+                                rtol=1e-11)
 
 
 if __name__ == '__main__':
