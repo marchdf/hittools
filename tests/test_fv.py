@@ -41,6 +41,17 @@ class FVTestCase(unittest.TestCase):
                                                  [0.1310522140609364, -0.1310522140609361]]]),
                                       decimal=13)
 
+    def test_fast_projection(self):
+        """Is the FV fast projection correct?"""
+
+        self.fv.fast_projection()
+        npt.assert_array_almost_equal(self.fv.U[0],
+                                      np.array([[[0.1111007024658372, -0.1111007024658371],
+                                                 [0.3163880325774635, -0.3163880325774637]],
+                                                [[0.0460194177505278, -0.0460194177505277],
+                                                 [0.1310522140661262, -0.131052214066126]]]),
+                                      decimal=13)
+
     def test_interpolation(self):
         """Is the FV interpolation correct?"""
 
