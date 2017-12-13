@@ -8,6 +8,7 @@
 #
 # ========================================================================
 import numpy as np
+import pandas as pd
 from scipy import integrate as spi
 from numpy.polynomial import legendre as leg  # import the Legendre functions
 
@@ -175,6 +176,22 @@ class FV:
                     yi = self.XC[1][i, j, k]
                     zi = self.XC[2][i, j, k]
 
-                    for component in range(3):
-                        self.U[component][i, j, k] = self.velocities.get_interpolated_velocity([xi, yi, zi])[
-                            component]
+                    self.U[0][i, j, k], self.U[1][i, j, k], self.U[2][i, j,
+                                                                      k] = self.velocities.get_interpolated_velocity([xi, yi, zi])
+
+    # ========================================================================
+    def to_df(self):
+        """
+        Return the interpolated fields as a dataframe
+
+        :return: interpolated fields
+        :rtype: DataFrame
+
+        """
+
+        return pd.DataFrame({'x': self.XC[0].flatten(),
+                             'y': self.XC[1].flatten(),
+                             'z': self.XC[2].flatten(),
+                             'u': self.U[0].flatten(),
+                             'v': self.U[1].flatten(),
+                             'w': self.U[2].flatten()})
