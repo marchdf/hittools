@@ -12,13 +12,12 @@ import pandas as pd
 from scipy import integrate as spi
 from numpy.polynomial import legendre as leg  # import the Legendre functions
 
+
 # ========================================================================
 #
 # Class definitions
 #
 # ========================================================================
-
-
 class FV:
     'Finite volume projections.'
 
@@ -76,7 +75,7 @@ class FV:
         """
 
         def f(z, y, x, component):
-            return self.velocities.get_interpolated_velocity([x, y, z])[component]
+            return self.velocities.numba_get_interpolated_velocity([x, y, z])[component]
 
         for i in range(self.N_E[0]):
             for j in range(self.N_E[1]):
@@ -117,9 +116,6 @@ class FV:
 
         """
 
-        def f(z, y, x, component):
-            return self.velocities.get_interpolated_velocity([x, y, z])[component]
-
         xg, wg = leg.leggauss(order + 1)
         XG = np.meshgrid(xg, xg, xg)
         WG = np.meshgrid(wg, wg, wg)
@@ -152,7 +148,7 @@ class FV:
                     for ig in range(N_G):
                         for jg in range(N_G):
                             for kg in range(N_G):
-                                u[0][ig, jg, kg], u[1][ig, jg, kg], u[2][ig, jg, kg] = self.velocities.get_interpolated_velocity([
+                                u[0][ig, jg, kg], u[1][ig, jg, kg], u[2][ig, jg, kg] = self.velocities.numba_get_interpolated_velocity([
                                     xloc[ig, jg, kg],
                                     yloc[ig, jg, kg],
                                     zloc[ig, jg, kg]])
@@ -177,7 +173,7 @@ class FV:
                     zi = self.XC[2][i, j, k]
 
                     self.U[0][i, j, k], self.U[1][i, j, k], self.U[2][i, j,
-                                                                      k] = self.velocities.get_interpolated_velocity([xi, yi, zi])
+                                                                      k] = self.velocities.numba_get_interpolated_velocity([xi, yi, zi])
 
     # ========================================================================
     def to_df(self):

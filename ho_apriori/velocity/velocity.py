@@ -9,6 +9,7 @@
 # ========================================================================
 import numpy as np
 import scipy.ndimage as spn
+from numba import jit, prange
 
 
 # ========================================================================
@@ -159,3 +160,82 @@ class Velocity:
                      * np.sum(A * self.Uf[2]))
 
         return [ui, vi, wi]
+
+    # ========================================================================
+    def numba_get_interpolated_velocity(self, xi):
+        """
+        Return the velocity interpolated using the Fourier coefficients.
+
+        Calls a Numba loop
+
+        :param xi: coordinate of point
+        :type xi: array
+        :return: velocities interpolated at the point
+        :rtype: list
+
+        """
+
+        return numba_interpolation_loop(xi,
+                                        self.L,
+                                        self.N,
+                                        self.K[0],
+                                        self.K[1],
+                                        self.K[2],
+                                        self.Uf[0],
+                                        self.Uf[1],
+                                        self.Uf[2])
+
+
+# ========================================================================
+@jit(nopython=True, parallel=True)
+def numba_interpolation_loop(xi, L, N, Kx, Ky, Kz, Uf, Vf, Wf):
+    """
+    Return the velocity interpolated using the Fourier coefficients.
+
+    .. note::
+
+       Meant to be used with Numba
+
+    :param xi: coordinate of point
+    :type xi: array
+    :param L: domain length
+    :type L: array
+    :param N: number of points
+    :type N: array
+    :param Kx: x-direction wavenumbers
+    :type Kx: array
+    :param Ky: y-direction wavenumbers
+    :type Ky: array
+    :param Kz: z-direction wavenumbers
+    :type Kz: array
+    :param Uf: x-direction velocity
+    :type Uf: array
+    :param Vf: y-direction velocity
+    :type Vf: array
+    :param Wf: z-direction velocity
+    :type Wf: array
+    :return: velocities interpolated at the point
+    :rtype: list
+
+    """
+    ui = 0.0
+    vi = 0.0
+    wi = 0.0
+    N3 = N[0] * N[1] * N[2]
+    for i in prange(Kx.shape[0]):
+        for j in prange(Kx.shape[1]):
+            for k in prange(Kx.shape[2]):
+
+                a = np.exp(2 * np.pi * 1j * (xi[0] * Kx[i, j, k] / L[0] +
+                                             xi[1] * Ky[i, j, k] / L[1] +
+                                             xi[2] * Kz[i, j, k] / L[2]))
+
+                ui += a * Uf[i, j, k]
+                vi += a * Vf[i, j, k]
+                wi += a * Wf[i, j, k]
+
+    ui = 2. / N3 * ui
+    vi = 2. / N3 * vi
+    wi = 2. / N3 * wi
+
+    return [ui.real, vi.real, wi.real]

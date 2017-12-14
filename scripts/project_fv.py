@@ -58,7 +58,7 @@ fv = fv.FV(resolution, 2 * np.pi, velocities)
 projection = time.time()
 # fv.fast_projection(order=0)
 fv.interpolation()
-end = time.time() - start
+end = time.time() - projection
 print("Elapsed projection time " + str(timedelta(seconds=end)) +
       " (or {0:f} seconds)".format(end))
 dat = fv.to_df()

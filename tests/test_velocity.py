@@ -95,7 +95,7 @@ class VelocityTestCase(unittest.TestCase):
                                 88.660438078340349)
 
     def test_get_interpolated_velocity(self):
-        """Is the interpolation of a function with DFT coefficients correct?"""
+        """Is the interpolation  with DFT coefficients correct?"""
 
         # Loop over random points in the domain
         xis = np.random.uniform(low=0, high=2 * np.pi, size=(100, 3))
@@ -113,6 +113,26 @@ class VelocityTestCase(unittest.TestCase):
             npt.assert_allclose(Ui[2],
                                 data.velocity_z(xi),
                                 rtol=1e-11)
+
+    def test_numba_get_interpolated_velocity(self):
+        """Is the interpolation with DFT coefficients correct (Numba version)?"""
+
+        # Loop over random points in the domain
+        xis = np.random.uniform(low=0, high=2 * np.pi, size=(100, 3))
+        for xi in xis:
+
+            # Get the interpolated velocity using DFT coefficients
+            Ui = self.velocities.numba_get_interpolated_velocity(xi)
+
+            npt.assert_allclose(Ui[0],
+                                data.velocity_x(xi),
+                                rtol=1e-10)
+            npt.assert_allclose(Ui[1],
+                                data.velocity_y(xi),
+                                rtol=1e-10)
+            npt.assert_allclose(Ui[2],
+                                data.velocity_z(xi),
+                                rtol=1e-10)
 
 
 if __name__ == '__main__':

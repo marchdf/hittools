@@ -21,6 +21,7 @@ setup(name='ho_apriori',
       license='Apache License 2.0',
       packages=['ho_apriori'],
       install_requires=[
+          'numba',
           'numpy',
           'pandas',
           'scipy',
