@@ -81,7 +81,10 @@ class Velocity:
         self.k = [np.fft.fftfreq(self.N[0]) * self.N[0],
                   np.fft.fftfreq(self.N[1]) * self.N[1],
                   np.fft.rfftfreq(self.N[2]) * self.N[2]]
-        self.K = np.meshgrid(self.k[0], self.k[1], self.k[2])
+        self.K = np.meshgrid(self.k[0],
+                             self.k[1],
+                             self.k[2],
+                             indexing='ij')
 
     # ========================================================================
     def gaussian_filter(self, width):
@@ -115,7 +118,7 @@ class Velocity:
                                          sigma,
                                          n=self.N[0])]
 
-        # Equivalent to spn.filters.gaussian_filter(U,sigma,mode='wrap',truncate=6)
+        # Same as spn.filters.gaussian_filter(U,sigma,mode='wrap',truncate=6)
         self.Uh = [np.fft.irfftn(self.Ufh[0]),
                    np.fft.irfftn(self.Ufh[1]),
                    np.fft.irfftn(self.Ufh[2])]

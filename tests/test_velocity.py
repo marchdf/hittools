@@ -6,6 +6,7 @@ import os
 import unittest
 import numpy as np
 import numpy.testing as npt
+from nufft import nufft3d2
 import ho_apriori.velocity.velocity as velocity
 import ho_apriori.data.data as data
 
@@ -29,6 +30,9 @@ class VelocityTestCase(unittest.TestCase):
         # Set some parameters
         self.width = 4
         np.random.seed(1)
+
+        # Random interpolation points in the domain
+        self.xis = np.random.uniform(low=0, high=2 * np.pi, size=(100, 3))
 
     def test_read(self):
         """Is the velocity loading function correct?"""
@@ -97,42 +101,104 @@ class VelocityTestCase(unittest.TestCase):
     def test_get_interpolated_velocity(self):
         """Is the interpolation  with DFT coefficients correct?"""
 
-        # Loop over random points in the domain
-        xis = np.random.uniform(low=0, high=2 * np.pi, size=(100, 3))
-        for xi in xis:
+        # Probe random points in the domain
+        Ui = np.zeros(self.xis.shape)
+        for k, xi in enumerate(self.xis):
 
             # Get the interpolated velocity using DFT coefficients
-            Ui = self.velocities.get_interpolated_velocity(xi)
+            Ui[k, :] = self.velocities.get_interpolated_velocity(xi)
 
-            npt.assert_allclose(Ui[0],
-                                data.velocity_x(xi),
-                                rtol=1e-11)
-            npt.assert_allclose(Ui[1],
-                                data.velocity_y(xi),
-                                rtol=1e-11)
-            npt.assert_allclose(Ui[2],
-                                data.velocity_z(xi),
-                                rtol=1e-11)
+        # Tests
+        npt.assert_allclose(Ui[:, 0],
+                            data.velocity_x([self.xis[:, 0],
+                                             self.xis[:, 1],
+                                             self.xis[:, 2]]),
+                            rtol=1e-11)
+        npt.assert_allclose(Ui[:, 1],
+                            data.velocity_y([self.xis[:, 0],
+                                             self.xis[:, 1],
+                                             self.xis[:, 2]]),
+                            rtol=1e-11)
+        npt.assert_allclose(Ui[:, 2],
+                            data.velocity_z([self.xis[:, 0],
+                                             self.xis[:, 1],
+                                             self.xis[:, 2]]),
+                            rtol=1e-11)
 
     def test_numba_get_interpolated_velocity(self):
         """Is the interpolation with DFT coefficients correct (Numba version)?"""
 
-        # Loop over random points in the domain
-        xis = np.random.uniform(low=0, high=2 * np.pi, size=(100, 3))
-        for xi in xis:
+        # Probe random points in the domain
+        Ui = np.zeros(self.xis.shape)
+        for k, xi in enumerate(self.xis):
 
             # Get the interpolated velocity using DFT coefficients
-            Ui = self.velocities.numba_get_interpolated_velocity(xi)
+            Ui[k, :] = self.velocities.numba_get_interpolated_velocity(xi)
 
-            npt.assert_allclose(Ui[0],
-                                data.velocity_x(xi),
-                                rtol=1e-10)
-            npt.assert_allclose(Ui[1],
-                                data.velocity_y(xi),
-                                rtol=1e-10)
-            npt.assert_allclose(Ui[2],
-                                data.velocity_z(xi),
-                                rtol=1e-10)
+        # Tests
+        npt.assert_allclose(Ui[:, 0],
+                            data.velocity_x([self.xis[:, 0],
+                                             self.xis[:, 1],
+                                             self.xis[:, 2]]),
+                            rtol=1e-10)
+        npt.assert_allclose(Ui[:, 1],
+                            data.velocity_y([self.xis[:, 0],
+                                             self.xis[:, 1],
+                                             self.xis[:, 2]]),
+                            rtol=1e-10)
+        npt.assert_allclose(Ui[:, 2],
+                            data.velocity_z([self.xis[:, 0],
+                                             self.xis[:, 1],
+                                             self.xis[:, 2]]),
+                            rtol=1e-10)
+
+    def test_nufft_get_interpolated_velocity(self):
+        """Is the interpolation with DFT coefficients correct (NUFFT version)?"""
+
+        # Our velocity data was generated with a real FFT. Fake the
+        # data for the full FFT so we can use NUFFT.
+        K = np.meshgrid(-self.velocities.k[0].astype(int),
+                        -self.velocities.k[1].astype(int),
+                        self.velocities.k[2][-2:0:-1].astype(int),
+                        indexing='ij')
+        Uf = [np.concatenate((self.velocities.Uf[c],
+                              np.conj(self.velocities.Uf[c][K[0],
+                                                            K[1],
+                                                            K[2]])),
+                             axis=2) for c in range(3)]
+
+        # Probe random points in the domain
+        Ui = np.zeros(self.xis.shape)
+        for c in range(3):
+            Ui[:, c] = np.real(nufft3d2(self.xis[:, 0],
+                                        self.xis[:, 1],
+                                        self.xis[:, 2],
+                                        np.roll(np.roll(np.roll(Uf[c],
+                                                                -int(self.velocities.N[0] / 2),
+                                                                0),
+                                                        -int(self.velocities.N[1] / 2),
+                                                        1),
+                                                -int(self.velocities.N[2] / 2),
+                                                2),
+                                        iflag=1,
+                                        direct=False)) / self.velocities.N.prod()
+
+        # Tests
+        npt.assert_allclose(Ui[:, 0],
+                            data.velocity_x([self.xis[:, 0],
+                                             self.xis[:, 1],
+                                             self.xis[:, 2]]),
+                            rtol=1e-10)
+        npt.assert_allclose(Ui[:, 1],
+                            data.velocity_y([self.xis[:, 0],
+                                             self.xis[:, 1],
+                                             self.xis[:, 2]]),
+                            rtol=1e-10)
+        npt.assert_allclose(Ui[:, 2],
+                            data.velocity_z([self.xis[:, 0],
+                                             self.xis[:, 1],
+                                             self.xis[:, 2]]),
+                            rtol=1e-10)
 
 
 if __name__ == '__main__':

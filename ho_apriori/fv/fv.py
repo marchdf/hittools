@@ -11,6 +11,9 @@ import numpy as np
 import pandas as pd
 from scipy import integrate as spi
 from numpy.polynomial import legendre as leg  # import the Legendre functions
+from nufft import nufft3d2
+import time
+from datetime import timedelta
 
 
 # ========================================================================
@@ -34,7 +37,6 @@ class FV:
         :type velocities: Velocity
 
         """
-
         self.N_E = np.array([N_E, N_E, N_E], dtype=np.int64)
         self.L = np.array([L, L, L], dtype=np.float64)
         self.dx = L / np.asarray(self.N_E, dtype=np.float64)
@@ -50,7 +52,8 @@ class FV:
 
         self.XC = np.meshgrid(self.xc[0],
                               self.xc[1],
-                              self.xc[2],)
+                              self.xc[2],
+                              indexing='ij')
 
         self.U = [np.zeros(self.N_E),
                   np.zeros(self.N_E),
@@ -75,7 +78,8 @@ class FV:
         """
 
         def f(z, y, x, component):
-            return self.velocities.numba_get_interpolated_velocity([x, y, z])[component]
+            return self.velocities.numba_get_interpolated_velocity([x, y, z])[
+                component]
 
         for i in range(self.N_E[0]):
             for j in range(self.N_E[1]):
@@ -117,8 +121,8 @@ class FV:
         """
 
         xg, wg = leg.leggauss(order + 1)
-        XG = np.meshgrid(xg, xg, xg)
-        WG = np.meshgrid(wg, wg, wg)
+        XG = np.meshgrid(xg, xg, xg, indexing='ij')
+        WG = np.meshgrid(wg, wg, wg, indexing='ij')
         W3G = WG[0] * WG[1] * WG[2]
         N_G = len(xg)
 
@@ -148,19 +152,76 @@ class FV:
                     for ig in range(N_G):
                         for jg in range(N_G):
                             for kg in range(N_G):
-                                u[0][ig, jg, kg], u[1][ig, jg, kg], u[2][ig, jg, kg] = self.velocities.numba_get_interpolated_velocity([
-                                    xloc[ig, jg, kg],
-                                    yloc[ig, jg, kg],
-                                    zloc[ig, jg, kg]])
+                                u[0][ig, jg, kg], u[1][ig, jg, kg], u[2][ig, jg, kg] = self.velocities.numba_get_interpolated_velocity(
+                                    [xloc[ig, jg, kg], yloc[ig, jg, kg], zloc[ig, jg, kg]])
 
                     for component in range(3):
                         self.U[component][i, j, k] = 0.5**3 * \
                             np.sum(W3G * u[component])
 
     # ========================================================================
+    def fast_projection_nufft(self, order=4, eps=1e-13):
+        """
+        Project the velocity fields on the FV solution space using NUFFT library.
+
+        In each element, calculate (using Gauss-Legendre quadrature):
+        :math:`\\bar{U} = \\frac{1}{\\Delta x \\Delta y \\Delta z} \\int_V U(x,y,z) \mathrm{d}x \mathrm{d}y \mathrm{d}z`
+
+        :param order: order to be used in Gauss-Legendre quadrature
+        :type order: int
+
+        """
+
+        xg, wg = leg.leggauss(order + 1)
+        XG = np.meshgrid(xg, xg, xg, indexing='ij')
+        WG = np.meshgrid(wg, wg, wg, indexing='ij')
+        N_G = len(xg)
+
+        # Our velocity data was generated with a real FFT. Fake the
+        # data for the full FFT so we can use NUFFT.
+        K = np.meshgrid(-self.velocities.k[0].astype(int),
+                        -self.velocities.k[1].astype(int),
+                        self.velocities.k[2][-2:0:-1].astype(int),
+                        indexing='ij')
+        Uf = [np.concatenate((self.velocities.Uf[c],
+                              np.conj(self.velocities.Uf[c][K[0],
+                                                            K[1],
+                                                            K[2]])),
+                             axis=2) for c in range(3)]
+
+        # Get all the quadrature node coordinates.
+        # They are ordered in (x,y,z,xg,yg,zg) and flattened
+        xis = np.zeros((np.prod(self.N_E) * N_G**3, 3))
+        xis[:, 0] = np.add.outer(self.XC[0],
+                                 0.5 * self.dx[0] * XG[0]).reshape(-1)
+        xis[:, 1] = np.add.outer(self.XC[1],
+                                 0.5 * self.dx[1] * XG[1]).reshape(-1)
+        xis[:, 2] = np.add.outer(self.XC[2],
+                                 0.5 * self.dx[2] * XG[2]).reshape(-1)
+
+        # Use NUFFT to get the velocities
+        w3g = np.reshape(WG[0] * WG[1] * WG[2], -1)
+        for c in range(3):
+            u = np.reshape(np.real(nufft3d2(xis[:, 0],
+                                            xis[:, 1],
+                                            xis[:, 2],
+                                            np.roll(np.roll(np.roll(Uf[c],
+                                                                    -int(self.velocities.N[0] / 2),
+                                                                    0),
+                                                            -int(self.velocities.N[1] / 2),
+                                                            1),
+                                                    -int(self.velocities.N[2] / 2),
+                                                    2),
+                                            iflag=1,
+                                            eps=eps)) / self.velocities.N.prod(),
+                           (self.N_E[0], self.N_E[1], self.N_E[2], -1))
+
+            self.U[c] = 0.5**3 * np.sum(w3g * u, axis=-1)
+
+    # ========================================================================
     def interpolation(self):
         """
-        Interpolate the velocity fields on the FV solution space.
+        Interpolate the velocity fields on the FV solution space
 
         """
 
