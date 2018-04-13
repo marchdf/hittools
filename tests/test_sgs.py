@@ -6,8 +6,8 @@ import os
 import unittest
 import numpy as np
 import numpy.testing as npt
-import ho_apriori.velocity.velocity as velocity
-import ho_apriori.sgs.sgs as sgs
+import hit_tools.velocity.velocity as velocity
+import hit_tools.sgs.sgs as sgs
 
 
 class SGSTestCase(unittest.TestCase):
@@ -16,7 +16,7 @@ class SGSTestCase(unittest.TestCase):
     def setUp(self):
         parent = os.path.abspath(os.path.join(__file__, '../..'))
         self.fname = os.path.abspath(os.path.join(
-            parent, 'ho_apriori', 'data', 'toy_data.npz'))
+            parent, 'hit_tools', 'data', 'toy_data.npz'))
         self.velocities = velocity.Velocity()
         self.velocities.read(self.fname)
         self.width = 4

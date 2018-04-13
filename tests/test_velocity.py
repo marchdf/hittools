@@ -7,8 +7,8 @@ import unittest
 import numpy as np
 import numpy.testing as npt
 from nufft import nufft3d2
-import ho_apriori.velocity.velocity as velocity
-import ho_apriori.data.data as data
+import hit_tools.velocity.velocity as velocity
+import hit_tools.data.data as data
 
 
 class VelocityTestCase(unittest.TestCase):
@@ -17,7 +17,7 @@ class VelocityTestCase(unittest.TestCase):
     def setUp(self):
         parent = os.path.abspath(os.path.join(__file__, '../..'))
         self.fname = os.path.abspath(os.path.join(
-            parent, 'ho_apriori', 'data', 'toy_data.npz'))
+            parent, 'hit_tools', 'data', 'toy_data.npz'))
 
         # Use the data class to create and output toy data
         self.data = data.Data()

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 #
-# ho_apriori documentation build configuration file, created by
+# hit_tools documentation build configuration file, created by
 # sphinx-quickstart on Tue Oct 31 11:28:22 2017.
 #
 # This file is execfile()d with the current directory set to its
@@ -19,11 +19,11 @@
 #
 import os
 import sys
-sys.path.append(os.path.abspath('../ho_apriori'))
-sys.path.append(os.path.abspath('../ho_apriori/constants'))
-sys.path.append(os.path.abspath('../ho_apriori/velocity'))
-sys.path.append(os.path.abspath('../ho_apriori/sgs'))
-sys.path.append(os.path.abspath('../ho_apriori/fv'))
+sys.path.append(os.path.abspath('../hit_tools'))
+sys.path.append(os.path.abspath('../hit_tools/constants'))
+sys.path.append(os.path.abspath('../hit_tools/velocity'))
+sys.path.append(os.path.abspath('../hit_tools/sgs'))
+sys.path.append(os.path.abspath('../hit_tools/fv'))
 
 # -- General configuration ------------------------------------------------
 
@@ -53,7 +53,7 @@ source_suffix = '.rst'
 master_doc = 'index'
 
 # General information about the project.
-project = 'ho_apriori'
+project = 'hit_tools'
 copyright = '2017, National Renewable Energy Laboratory'
 author = 'Marc T. Henry de Frahan'
 
@@ -119,7 +119,7 @@ html_sidebars = {
 # -- Options for HTMLHelp output ------------------------------------------
 
 # Output file base name for HTML help builder.
-htmlhelp_basename = 'ho_aprioridoc'
+htmlhelp_basename = 'hit_toolsdoc'
 
 
 # -- Options for LaTeX output ---------------------------------------------
@@ -146,7 +146,7 @@ latex_elements = {
 # (source start file, target name, title,
 #  author, documentclass [howto, manual, or own class]).
 latex_documents = [
-    (master_doc, 'ho_apriori.tex', 'ho\\_apriori Documentation',
+    (master_doc, 'hit_tools.tex', 'hit\\_tools Documentation',
      'Marc T. Henry de Frahan', 'manual'),
 ]
 
@@ -156,7 +156,7 @@ latex_documents = [
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
 man_pages = [
-    (master_doc, 'ho_apriori', 'ho_apriori Documentation',
+    (master_doc, 'hit_tools', 'hit_tools Documentation',
      [author], 1)
 ]
 
@@ -167,8 +167,8 @@ man_pages = [
 # (source start file, target name, title, author,
 #  dir menu entry, description, category)
 texinfo_documents = [
-    (master_doc, 'ho_apriori', 'ho_apriori Documentation',
-     author, 'ho_apriori', 'One line description of project.',
+    (master_doc, 'hit_tools', 'hit_tools Documentation',
+     author, 'hit_tools', 'One line description of project.',
      'Miscellaneous'),
 ]
 

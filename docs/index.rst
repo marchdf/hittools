@@ -1,10 +1,10 @@
-.. ho_apriori documentation master file, created by
+.. hit_tools documentation master file, created by
    sphinx-quickstart on Tue Oct 31 11:28:22 2017.
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-Welcome to ho_apriori's documentation!
-======================================
+Welcome to hit_tools's documentation!
+=====================================
 
 .. toctree::
    :maxdepth: 4

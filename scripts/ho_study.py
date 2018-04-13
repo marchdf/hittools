@@ -16,10 +16,10 @@ import subprocess
 import time
 from datetime import timedelta
 import numpy as np
-import ho_apriori.velocity.velocity as velocity
-import ho_apriori.constants.constants as constants
-import ho_apriori.sgs.sgs as sgs
-import ho_apriori.fv.fv as fv
+import hit_tools.velocity.velocity as velocity
+import hit_tools.constants.constants as constants
+import hit_tools.sgs.sgs as sgs
+import hit_tools.fv.fv as fv
 
 
 # ========================================================================
@@ -121,7 +121,7 @@ if __name__ == '__main__':
     # Load the velocity data
     parent = os.path.abspath(os.path.join(__file__, '..'))
     fname = os.path.abspath(os.path.join(
-        parent, 'ho_apriori', 'data', 'toy_data.npz'))
+        parent, 'hit_tools', 'data', 'toy_data.npz'))
     velocities = velocity.Velocity()
     velocities.read(fname)
 

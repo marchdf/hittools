@@ -20,8 +20,8 @@ from mpi4py import MPI
 
 sys.path.insert(0, os.path.abspath(
     os.path.join(os.path.dirname(__file__), '../')))
-import ho_apriori.velocity.velocity as velocity
-import ho_apriori.fv.fv as fv
+import hit_tools.velocity.velocity as velocity
+import hit_tools.fv.fv as fv
 
 
 # ========================================================================
@@ -89,6 +89,7 @@ if rank == 0:
 
 # ========================================================================
 # Perform the projection
+projection = time.time()
 
 # Define FV solution space
 pmap = grid.Get_topo()[0]
@@ -99,9 +100,9 @@ fvs = fv.FV([args.res // pmap[0], args.res // pmap[1], args.res // pmap[2]],
             [xloc[coords[0]], yloc[coords[1]], zloc[coords[2]]],
             [xloc[coords[0] + 1], yloc[coords[1] + 1], zloc[coords[2] + 1]])
 
-# Load the velocity fields from the UT data
-fname = os.path.abspath('../ho_apriori/data/hit_ut_wavespace_256.npz')
-#fname = os.path.abspath('../ho_apriori/data/toy_data.npz')
+# Load the velocity fields
+fname = os.path.abspath('../hit_tools/data/hit_ut_wavespace_256.npz')
+#fname = os.path.abspath('../hit_tools/data/toy_data.npz')
 velocities = velocity.Velocity()
 velocities.read(fname)
 
@@ -124,9 +125,12 @@ dat.to_csv(oname,
            float_format='%.18e',
            index=False)
 
+end = time.time() - projection
+print("Elapsed projection time " + str(timedelta(seconds=end)) +
+      " (or {0:f} seconds)".format(end))
 
 # ========================================================================
-# Merge the files together on rank 0 and do statistics and normalize
+# Merge the files together on rank 0, do statistics and normalize
 comm.Barrier()
 if rank == 0:
 

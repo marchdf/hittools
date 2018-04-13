@@ -1,0 +1,11 @@
+mpi4py
+nose
+nufft
+numba
+numpy
+pandas
+pbr
+scipy
+sphinx
+sphinx_rtd_theme
+unittest2

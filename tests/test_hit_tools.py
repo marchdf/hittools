@@ -12,8 +12,8 @@ import scipy.ndimage as spn
 import scipy.ndimage.filters as filters
 
 
-class HOAprioriTestCase(unittest.TestCase):
-    """Tests for `ho_apriori.py`."""
+class HITToolsTestCase(unittest.TestCase):
+    """Tests for `hit_tools.py`."""
 
     def setUp(self):
 
@@ -53,8 +53,14 @@ class HOAprioriTestCase(unittest.TestCase):
         ui = np.real(1. / self.N[0] * np.dot(A, 2 * uf))
         for m, mi in enumerate(mis):
             xi = mi * self.dx[0]
-            print("Interpolation value at {0:.6f} is {1:.6f} and exact is {2:.6f} (error={3:.6e})".format(
-                xi, ui[m], f(xi), np.fabs(ui[m] - f(xi))))
+            print(
+                "Interpolation value at {0:.6f} is {1:.6f} and exact is {2:.6f} (error={3:.6e})".format(
+                    xi,
+                    ui[m],
+                    f(xi),
+                    np.fabs(
+                        ui[m] -
+                        f(xi))))
 
     # def test_gaussian_filter(self):
     #     """Is the Gaussian filtering in spectral space correct?"""
