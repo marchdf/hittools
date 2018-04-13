@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 #
-# Project Jeremy's wavespace data unto a FV grid
-#
+# Project wavespace data unto a FV grid
 #
 
 # ========================================================================
@@ -14,8 +13,10 @@ import sys
 import os
 import time
 from datetime import timedelta
+import subprocess as sp
 import numpy as np
 import pandas as pd
+from mpi4py import MPI
 
 sys.path.insert(0, os.path.abspath(
     os.path.join(os.path.dirname(__file__), '../')))
@@ -25,13 +26,34 @@ import ho_apriori.fv.fv as fv
 
 # ========================================================================
 #
+# Function definitions
+#
+# ========================================================================
+def run_cmd(cmd):
+    log = open('logfile', "w")
+    proc = sp.Popen(cmd,
+                    shell=True,
+                    stdout=log,
+                    stderr=sp.PIPE)
+    retcode = proc.wait()
+    log.flush()
+
+    return retcode
+
+
+# ========================================================================
+#
 # Parse arguments
 #
 # ========================================================================
 parser = argparse.ArgumentParser(
-    description='Convert velocity fields for Pele')
-parser.add_argument(
-    '-p', '--plot', help='Show plots', action='store_true')
+    description='Project velocity fields into a finite volume space')
+parser.add_argument('-r',
+                    '--resolution',
+                    dest='res',
+                    help='Number of element in one direction',
+                    type=int,
+                    default=6)
 args = parser.parse_args()
 
 
@@ -40,28 +62,55 @@ args = parser.parse_args()
 # Main
 #
 # ========================================================================
+
 # Timer
 start = time.time()
 
 # Setup
-resolution = 4
 mu = 0.0028
 Re = 1. / mu
+xmin = 0
+xmax = 2 * np.pi
+L = xmax - xmin
+
+# MPI setup
+comm = MPI.COMM_WORLD
+rank = comm.Get_rank()
+nprocs = comm.Get_size()
+dimensions = MPI.Compute_dims(nprocs, 3)
+periodicity = (False, False, False)
+grid = comm.Create_cart(dimensions, periodicity, reorder=True)
+coords = grid.Get_coords(rank)
+
+if rank == 0:
+    print("Running MPI job with {0:d} procs".format(nprocs))
+    print("  Dim: " + str(grid.Get_dim()))
+    print("  Topology: " + str(grid.Get_topo()))
+
+# ========================================================================
+# Perform the projection
+
+# Define FV solution space
+pmap = grid.Get_topo()[0]
+xloc = np.linspace(xmin, xmax, pmap[0] + 1)
+yloc = np.linspace(xmin, xmax, pmap[1] + 1)
+zloc = np.linspace(xmin, xmax, pmap[2] + 1)
+fvs = fv.FV([args.res // pmap[0], args.res // pmap[1], args.res // pmap[2]],
+            [xloc[coords[0]], yloc[coords[1]], zloc[coords[2]]],
+            [xloc[coords[0] + 1], yloc[coords[1] + 1], zloc[coords[2] + 1]])
 
 # Load the velocity fields from the UT data
 fname = os.path.abspath('../ho_apriori/data/hit_ut_wavespace_256.npz')
+#fname = os.path.abspath('../ho_apriori/data/toy_data.npz')
 velocities = velocity.Velocity()
 velocities.read(fname)
 
-# Define FV solution space and project solution
-fv = fv.FV(resolution, 2 * np.pi, velocities)
-projection = time.time()
-# fv.fast_projection(order=0)
-fv.interpolation()
-end = time.time() - projection
-print("Elapsed projection time " + str(timedelta(seconds=end)) +
-      " (or {0:f} seconds)".format(end))
-dat = fv.to_df()
+# Project velocities on FV space
+fvs.fast_projection_nufft(velocities, order=4)
+
+# ========================================================================
+# Write out the data files individually (we will merge later)
+dat = fvs.to_df()
 
 # Rename columns to conform to Pele ordering
 dat = dat.rename(columns={'x': 'y', 'y': 'x'})
@@ -69,46 +118,99 @@ dat = dat.rename(columns={'x': 'y', 'y': 'x'})
 # Sort coordinates to be read easily in Fortran
 dat.sort_values(by=['z', 'y', 'x'], inplace=True)
 
-# Calculate urms
-urms = np.sqrt(np.mean(dat['u']**2 + dat['v']**2 + dat['w']**2) / 3)
-
-# Calculate Taylor length scale (note Fortran ordering assumption for gradient)
-u2 = np.mean(dat['u']**2)
-dudx2 = np.mean(
-    np.gradient(dat['u'].values.reshape((resolution, resolution, resolution),
-                                        order='F'),
-                fv.dx[0],
-                axis=0)**2)
-lambda0 = np.sqrt(u2 / dudx2)
-k0 = 2. / lambda0
-tau = lambda0 / urms
-Re_lambda = urms * lambda0 / mu
-
-# Normalize the data by urms
-dat['u'] /= urms
-dat['v'] /= urms
-dat['w'] /= urms
-
-# Print some information
-print("Simulation information:")
-print('\t resolution =', resolution)
-print('\t urms =', urms)
-print('\t lambda0 =', lambda0)
-print('\t k0 = 2/lambda0 =', k0)
-print('\t tau = lambda0/urms =', tau)
-print('\t mu =', mu)
-print('\t Re = 1/mu =', Re)
-print('\t Re_lambda = urms*lambda0/mu = ', Re_lambda)
-
-# ========================================================================
-# Write out the data so we can read it in Pele IC function
-oname = "hit_ic_ut_{0:d}.dat".format(resolution)
+oname = "fv_{0:d}_{1:d}_{2:d}.dat".format(args.res, nprocs, rank)
 dat.to_csv(oname,
            columns=['x', 'y', 'z', 'u', 'v', 'w'],
            float_format='%.18e',
            index=False)
 
+
+# ========================================================================
+# Merge the files together on rank 0 and do statistics and normalize
+comm.Barrier()
+if rank == 0:
+
+    # Merge all the data files
+    print("Merging data files")
+    merge = time.time()
+    fname = "hit_ic_ut_{0:d}.dat".format(args.res)
+    tmpname = 'tmp.dat'
+    retcode = run_cmd('head -1 ' + oname + ' > ' + tmpname)
+    for n in range(nprocs):
+        tname = "fv_{0:d}_{1:d}_{2:d}.dat".format(args.res, nprocs, n)
+        retcode = run_cmd('tail -n +2 -q ' + tname + ' >> ' + tmpname)
+
+    # Sort the merged file
+    retcode = run_cmd('head -n 1 ' + tmpname + ' > ' + fname)
+    retcode = run_cmd('tail -n +2 -q ' +
+                      tmpname +
+                      ' | sort -k3 -k2 -k1 -g -t, >> ' +
+                      fname)
+    end = time.time() - merge
+    print("Elapsed merge time " + str(timedelta(seconds=end)) +
+          " (or {0:f} seconds)".format(end))
+
+    # Do some statistics
+    print("Calculate statistics")
+    statistics = time.time()
+    dat = pd.read_csv(fname)
+
+    # Calculate urms
+    umag = dat['u']**2 + dat['v']**2 + dat['w']**2
+    urms = np.sqrt(np.mean(umag) / 3)
+
+    # Calculate kinetic energy
+    KE = 0.5 * np.sum(umag) * np.prod(fvs.dx)
+
+    # Calculate Taylor length scale (note Fortran ordering assumption for
+    # gradient)
+    u2 = np.mean(dat['u']**2)
+    dudx2 = np.mean(
+        np.gradient(
+            dat['u'].values.reshape(
+                (args.res,
+                 args.res,
+                 args.res),
+                order='F'),
+            fvs.dx[0],
+            axis=0)**2)
+    lambda0 = np.sqrt(u2 / dudx2)
+    k0 = 2. / lambda0
+    tau = lambda0 / urms
+    Re_lambda = urms * lambda0 / mu
+
+    # Normalize the data by urms
+    dat['u'] /= urms
+    dat['v'] /= urms
+    dat['w'] /= urms
+
+    # Print some information
+    print("  Simulation information:")
+    print('    resolution =', args.res)
+    print('    urms =', urms)
+    print('    KE =', KE)
+    print('    lambda0 =', lambda0)
+    print('    k0 = 2/lambda0 =', k0)
+    print('    tau = lambda0/urms =', tau)
+    print('    mu =', mu)
+    print('    Re = 1/mu =', Re)
+    print('    Re_lambda = urms*lambda0/mu = ', Re_lambda)
+
+    dat.to_csv(fname,
+               columns=['x', 'y', 'z', 'u', 'v', 'w'],
+               float_format='%.18e',
+               index=False)
+
+    # Clean up
+    os.remove(tmpname)
+
+    end = time.time() - statistics
+    print("Elapsed statistics time " + str(timedelta(seconds=end)) +
+          " (or {0:f} seconds)".format(end))
+
+
 # output timer
 end = time.time() - start
-print("Elapsed time " + str(timedelta(seconds=end)) +
-      " (or {0:f} seconds)".format(end))
+if rank == 0:
+    print("Elapsed total time " + str(timedelta(seconds=end)) +
+          " (or {0:f} seconds)".format(end))

@@ -28,12 +28,14 @@ class FVTestCase(unittest.TestCase):
         self.velocities.read(self.fname)
 
         # Define FV solution space
-        self.fv = fv.FV(2, np.pi / 8., self.velocities)
+        self.fv = fv.FV([2, 2, 2],
+                        [0, 0, 0],
+                        [np.pi / 8., np.pi / 8., np.pi / 8.])
 
     def test_projection(self):
         """Is the FV projection correct?"""
 
-        self.fv.projection()
+        self.fv.projection(self.velocities)
         npt.assert_array_almost_equal(self.fv.U[0],
                                       np.array([[[0.1111007024614374, -0.1111007024614374],
                                                  [0.0460194177487053, -0.0460194177487052]],
@@ -44,7 +46,7 @@ class FVTestCase(unittest.TestCase):
     def test_fast_projection(self):
         """Is the FV fast projection correct?"""
 
-        self.fv.fast_projection()
+        self.fv.fast_projection(self.velocities)
         npt.assert_array_almost_equal(self.fv.U[0],
                                       np.array([[[0.1111007024658372, -0.1111007024658371],
                                                  [0.0460194177505278, -0.0460194177505277]],
@@ -55,7 +57,7 @@ class FVTestCase(unittest.TestCase):
     def test_fast_projection_nufft(self):
         """Is the FV fast projection with NUFFT correct?"""
 
-        self.fv.fast_projection_nufft()
+        self.fv.fast_projection_nufft(self.velocities)
         npt.assert_array_almost_equal(self.fv.U[0],
                                       np.array([[[0.1111007024658372, -0.1111007024658371],
                                                  [0.0460194177505278, -0.0460194177505277]],
@@ -66,7 +68,7 @@ class FVTestCase(unittest.TestCase):
     def test_interpolation(self):
         """Is the FV interpolation correct?"""
 
-        self.fv.interpolation()
+        self.fv.interpolation(self.velocities)
         npt.assert_array_almost_equal(self.fv.U[0],
                                       np.array([[[0.1274488947760401, -0.1274488947760397],
                                                  [0.0527910607256974, -0.052791060725697]],
