@@ -54,6 +54,12 @@ parser.add_argument('-r',
                     help='Number of element in one direction',
                     type=int,
                     default=6)
+parser.add_argument('-o',
+                    '--order',
+                    dest='order',
+                    help='Integration order',
+                    type=int,
+                    default=4)
 args = parser.parse_args()
 
 
@@ -63,8 +69,12 @@ args = parser.parse_args()
 #
 # ========================================================================
 
-# Timer
-start = time.time()
+# Timers
+timers = {'projection': 0,
+          'merge': 0,
+          'statistics': 0,
+          'total': 0}
+timers['total'] = time.time()
 
 # Setup
 mu = 0.0028
@@ -89,7 +99,7 @@ if rank == 0:
 
 # ========================================================================
 # Perform the projection
-projection = time.time()
+timers['projection'] = time.time()
 
 # Define FV solution space
 pmap = grid.Get_topo()[0]
@@ -107,7 +117,7 @@ velocities = velocity.Velocity()
 velocities.read(fname)
 
 # Project velocities on FV space
-fvs.fast_projection_nufft(velocities, order=4)
+fvs.fast_projection_nufft(velocities, order=args.order)
 
 # ========================================================================
 # Write out the data files individually (we will merge later)
@@ -125,9 +135,7 @@ dat.to_csv(oname,
            float_format='%.18e',
            index=False)
 
-end = time.time() - projection
-print("Elapsed projection time " + str(timedelta(seconds=end)) +
-      " (or {0:f} seconds)".format(end))
+timers['projection'] = time.time() - timers['projection']
 
 # ========================================================================
 # Merge the files together on rank 0, do statistics and normalize
@@ -135,8 +143,7 @@ comm.Barrier()
 if rank == 0:
 
     # Merge all the data files
-    print("Merging data files")
-    merge = time.time()
+    timers['merge'] = time.time()
     fname = "hit_ic_ut_{0:d}.dat".format(args.res)
     tmpname = 'tmp.dat'
     retcode = run_cmd('head -1 ' + oname + ' > ' + tmpname)
@@ -150,13 +157,10 @@ if rank == 0:
                       tmpname +
                       ' | sort -k3 -k2 -k1 -g -t, >> ' +
                       fname)
-    end = time.time() - merge
-    print("Elapsed merge time " + str(timedelta(seconds=end)) +
-          " (or {0:f} seconds)".format(end))
+    timers['merge'] = time.time() - timers['merge']
 
     # Do some statistics
-    print("Calculate statistics")
-    statistics = time.time()
+    timers['statistics'] = time.time()
     dat = pd.read_csv(fname)
 
     # Calculate urms
@@ -208,13 +212,13 @@ if rank == 0:
     # Clean up
     os.remove(tmpname)
 
-    end = time.time() - statistics
-    print("Elapsed statistics time " + str(timedelta(seconds=end)) +
-          " (or {0:f} seconds)".format(end))
+    timers['statistics'] = time.time() - timers['statistics']
 
 
 # output timer
-end = time.time() - start
+timers['total'] = time.time() - timers['total']
 if rank == 0:
-    print("Elapsed total time " + str(timedelta(seconds=end)) +
-          " (or {0:f} seconds)".format(end))
+    print("  Timers:")
+    for key, value in timers.items():
+        print("    " + key + " " + str(timedelta(seconds=value)) +
+              " (or {0:.3f} seconds)".format(value))

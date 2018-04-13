@@ -12,8 +12,6 @@ import pandas as pd
 from scipy import integrate as spi
 from numpy.polynomial import legendre as leg  # import the Legendre functions
 from nufft import nufft3d2
-import time
-from datetime import timedelta
 
 
 # ========================================================================
