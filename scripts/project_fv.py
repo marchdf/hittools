@@ -123,9 +123,6 @@ fvs.fast_projection_nufft(velocities, order=args.order)
 # Write out the data files individually (we will merge later)
 dat = fvs.to_df()
 
-# Rename columns to conform to Pele ordering
-dat = dat.rename(columns={'x': 'y', 'y': 'x'})
-
 # Sort coordinates to be read easily in Fortran
 dat.sort_values(by=['z', 'y', 'x'], inplace=True)
 
@@ -151,7 +148,7 @@ if rank == 0:
         tname = "fv_{0:d}_{1:d}_{2:d}.dat".format(args.res, nprocs, n)
         retcode = run_cmd('tail -n +2 -q ' + tname + ' >> ' + tmpname)
 
-    # Sort the merged file
+    # Sort coordinates to be read easily in Fortran
     retcode = run_cmd('head -n 1 ' + tmpname + ' > ' + fname)
     retcode = run_cmd('tail -n +2 -q ' +
                       tmpname +
@@ -187,11 +184,6 @@ if rank == 0:
     tau = lambda0 / urms
     Re_lambda = urms * lambda0 / mu
 
-    # Normalize the data by urms
-    dat['u'] /= urms
-    dat['v'] /= urms
-    dat['w'] /= urms
-
     # Print some information
     print("  Simulation information:")
     print('    resolution =', args.res)
@@ -203,11 +195,6 @@ if rank == 0:
     print('    mu =', mu)
     print('    Re = 1/mu =', Re)
     print('    Re_lambda = urms*lambda0/mu = ', Re_lambda)
-
-    dat.to_csv(fname,
-               columns=['x', 'y', 'z', 'u', 'v', 'w'],
-               float_format='%.18e',
-               index=False)
 
     # Clean up
     os.remove(tmpname)
