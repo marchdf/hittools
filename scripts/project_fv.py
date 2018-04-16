@@ -111,8 +111,10 @@ fvs = fv.FV([args.res // pmap[0], args.res // pmap[1], args.res // pmap[2]],
             [xloc[coords[0] + 1], yloc[coords[1] + 1], zloc[coords[2] + 1]])
 
 # Load the velocity fields
-fname = os.path.abspath('../hit_tools/data/hit_ut_wavespace_256.npz')
-#fname = os.path.abspath('../hit_tools/data/toy_data.npz')
+# fname = os.path.abspath('../hit_tools/data/hit_ut_wavespace_256.npz')
+fname = os.path.abspath('../hit_tools/data/hit_ut_wavespace_32.npz')
+# fname = os.path.abspath('../hit_tools/data/toy_data.npz')
+
 velocities = velocity.Velocity()
 velocities.read(fname)
 
@@ -164,8 +166,14 @@ if rank == 0:
     umag = dat['u']**2 + dat['v']**2 + dat['w']**2
     urms = np.sqrt(np.mean(umag) / 3)
 
-    # Calculate kinetic energy
-    KE = 0.5 * np.sum(umag) * np.prod(fvs.dx)
+    # Calculate kinetic energy and other integrals
+    KE = 0.5 * np.sum(umag) * np.prod(fvs.dx) / np.prod(fvs.L)
+    KEu = 0.5 * np.sum(dat['u']**2) * np.prod(fvs.dx) / np.prod(fvs.L)
+    KEv = 0.5 * np.sum(dat['v']**2) * np.prod(fvs.dx) / np.prod(fvs.L)
+    KEw = 0.5 * np.sum(dat['w']**2) * np.prod(fvs.dx) / np.prod(fvs.L)
+    uint = np.sum(dat['u']) * np.prod(fvs.dx) / np.prod(fvs.L)
+    vint = np.sum(dat['v']) * np.prod(fvs.dx) / np.prod(fvs.L)
+    wint = np.sum(dat['w']) * np.prod(fvs.dx) / np.prod(fvs.L)
 
     # Calculate Taylor length scale (note Fortran ordering assumption for
     # gradient)
@@ -188,7 +196,13 @@ if rank == 0:
     print("  Simulation information:")
     print('    resolution =', args.res)
     print('    urms =', urms)
-    print('    KE =', KE)
+    print('    int u = {0:.8f}'.format(uint))
+    print('    int v = {0:.8f}'.format(vint))
+    print('    int w = {0:.8f}'.format(wint))
+    print('    KE = {0:f} (u:{1:f}, v:{2:f}, w:{3:f})'.format(KE,
+                                                              KEu,
+                                                              KEv,
+                                                              KEw))
     print('    lambda0 =', lambda0)
     print('    k0 = 2/lambda0 =', k0)
     print('    tau = lambda0/urms =', tau)
