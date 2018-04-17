@@ -47,6 +47,15 @@ def run_cmd(cmd):
 # Parse arguments
 #
 # ========================================================================
+class FullPaths(argparse.Action):
+    """Expand user- and relative-paths"""
+
+    def __call__(self, parser, namespace, values, option_string=None):
+        setattr(namespace,
+                self.dest,
+                os.path.abspath(os.path.expanduser(values)))
+
+
 parser = argparse.ArgumentParser(
     description='Project velocity fields into a finite volume space')
 parser.add_argument('-r',
@@ -54,13 +63,19 @@ parser.add_argument('-r',
                     dest='res',
                     help='Number of element in one direction',
                     type=int,
-                    default=6)
+                    default=8)
 parser.add_argument('-o',
                     '--order',
                     dest='order',
                     help='Integration order',
                     type=int,
                     default=4)
+parser.add_argument('-f', '--file',
+                    dest='iname',
+                    help='File with wavespace velocity fields',
+                    type=str,
+                    required=True,
+                    action=FullPaths)
 args = parser.parse_args()
 
 
@@ -110,12 +125,9 @@ fvs = fv.FV([args.res // pmap[0], args.res // pmap[1], args.res // pmap[2]],
             [xloc[coords[0] + 1], yloc[coords[1] + 1], zloc[coords[2] + 1]])
 
 # Load the velocity fields
-# fname = os.path.abspath('../hit_tools/data/hit_ut_wavespace_256.npz')
-fname = os.path.abspath('../hit_tools/data/hit_ut_wavespace_32.npz')
-# fname = os.path.abspath('../hit_tools/data/toy_data.npz')
-
+print("  Loading file:", args.iname)
 velocities = velocity.Velocity()
-velocities.read(fname)
+velocities.read(args.iname)
 
 # Project velocities on FV space
 fvs.fast_projection_nufft(velocities, order=args.order)
@@ -208,7 +220,7 @@ if rank == 0:
                     axis=2)
 
     # Print some information
-    print("  Simulation information:")
+    print("  FV solution information:")
     print('    resolution =', args.res)
     print('    urms =', urms)
     print('    KE = {0:f} (u:{1:f}, v:{2:f}, w:{3:f})'.format(KE,
