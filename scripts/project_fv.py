@@ -12,6 +12,7 @@ import argparse
 import sys
 import os
 import time
+import operator
 from datetime import timedelta
 import subprocess as sp
 import numpy as np
@@ -77,8 +78,6 @@ timers = {'projection': 0,
 timers['total'] = time.time()
 
 # Setup
-mu = 0.0028
-Re = 1. / mu
 xmin = 0
 xmax = 2 * np.pi
 L = xmax - xmin
@@ -167,13 +166,10 @@ if rank == 0:
     urms = np.sqrt(np.mean(umag) / 3)
 
     # Calculate kinetic energy and other integrals
-    KE = 0.5 * np.sum(umag) * np.prod(fvs.dx) / np.prod(fvs.L)
-    KEu = 0.5 * np.sum(dat['u']**2) * np.prod(fvs.dx) / np.prod(fvs.L)
-    KEv = 0.5 * np.sum(dat['v']**2) * np.prod(fvs.dx) / np.prod(fvs.L)
-    KEw = 0.5 * np.sum(dat['w']**2) * np.prod(fvs.dx) / np.prod(fvs.L)
-    uint = np.sum(dat['u']) * np.prod(fvs.dx) / np.prod(fvs.L)
-    vint = np.sum(dat['v']) * np.prod(fvs.dx) / np.prod(fvs.L)
-    wint = np.sum(dat['w']) * np.prod(fvs.dx) / np.prod(fvs.L)
+    KE = 0.5 * np.mean(umag)
+    KEu = 0.5 * np.mean(dat['u']**2)
+    KEv = 0.5 * np.mean(dat['v']**2)
+    KEw = 0.5 * np.mean(dat['w']**2)
 
     # Calculate Taylor length scale (note Fortran ordering assumption for
     # gradient)
@@ -190,15 +186,31 @@ if rank == 0:
     lambda0 = np.sqrt(u2 / dudx2)
     k0 = 2. / lambda0
     tau = lambda0 / urms
-    Re_lambda = urms * lambda0 / mu
+
+    # Incompressible code so div u = 0
+    div_u = np.gradient(dat['u'].values.reshape((args.res,
+                                                 args.res,
+                                                 args.res),
+                                                order='F'),
+                        fvs.dx[0],
+                        axis=0) + \
+        np.gradient(dat['v'].values.reshape((args.res,
+                                             args.res,
+                                             args.res),
+                                            order='F'),
+                    fvs.dx[1],
+                    axis=1) + \
+        np.gradient(dat['w'].values.reshape((args.res,
+                                             args.res,
+                                             args.res),
+                                            order='F'),
+                    fvs.dx[2],
+                    axis=2)
 
     # Print some information
     print("  Simulation information:")
     print('    resolution =', args.res)
     print('    urms =', urms)
-    print('    int u = {0:.8f}'.format(uint))
-    print('    int v = {0:.8f}'.format(vint))
-    print('    int w = {0:.8f}'.format(wint))
     print('    KE = {0:f} (u:{1:f}, v:{2:f}, w:{3:f})'.format(KE,
                                                               KEu,
                                                               KEv,
@@ -206,9 +218,7 @@ if rank == 0:
     print('    lambda0 =', lambda0)
     print('    k0 = 2/lambda0 =', k0)
     print('    tau = lambda0/urms =', tau)
-    print('    mu =', mu)
-    print('    Re = 1/mu =', Re)
-    print('    Re_lambda = urms*lambda0/mu = ', Re_lambda)
+    print('    div u = ', np.sum(div_u))
 
     # Clean up
     os.remove(tmpname)
@@ -220,6 +230,6 @@ if rank == 0:
 timers['total'] = time.time() - timers['total']
 if rank == 0:
     print("  Timers:")
-    for key, value in timers.items():
+    for key, value in sorted(timers.items(), key=operator.itemgetter(1), reverse=True):
         print("    " + key + " " + str(timedelta(seconds=value)) +
               " (or {0:.3f} seconds)".format(value))
