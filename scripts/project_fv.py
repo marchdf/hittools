@@ -13,6 +13,7 @@ import sys
 import os
 import time
 import operator
+import logging
 from datetime import timedelta
 import subprocess as sp
 import numpy as np
@@ -106,10 +107,28 @@ periodicity = (False, False, False)
 grid = comm.Create_cart(dimensions, periodicity, reorder=True)
 coords = grid.Get_coords(rank)
 
+# Logging information
 if rank == 0:
-    print("Running MPI job with {0:d} procs".format(nprocs))
-    print("  Dim: " + str(grid.Get_dim()))
-    print("  Topology: " + str(grid.Get_topo()))
+    pfx = "hit_ic_ut_{0:d}".format(args.res)
+    logname = pfx + '.log'
+    logging.basicConfig(level=logging.INFO,
+                        format='%(asctime)s %(name)-12s %(levelname)-8s %(message)s',
+                        datefmt='%m-%d %H:%M',
+                        filename=logname,
+                        filemode='w')
+    # define a Handler which writes INFO messages or higher to the sys.stderr
+    console = logging.StreamHandler()
+    console.setLevel(logging.INFO)
+    # set a format which is simpler for console use
+    formatter = logging.Formatter('%(name)-12s: %(levelname)-8s %(message)s')
+    # tell the handler to use this format
+    console.setFormatter(formatter)
+    # add the handler to the root logger
+    logging.getLogger('').addHandler(console)
+
+    logging.info("Running MPI job with {0:d} procs".format(nprocs))
+    logging.info("  Dim: " + str(grid.Get_dim()))
+    logging.info("  Topology: " + str(grid.Get_topo()))
 
 # ========================================================================
 # Perform the projection
@@ -125,7 +144,8 @@ fvs = fv.FV([args.res // pmap[0], args.res // pmap[1], args.res // pmap[2]],
             [xloc[coords[0] + 1], yloc[coords[1] + 1], zloc[coords[2] + 1]])
 
 # Load the velocity fields
-print("  Loading file:", args.iname)
+if rank == 0:
+    logging.info("  Loading file: {0:s}".format(args.iname))
 velocities = velocity.Velocity()
 velocities.read(args.iname)
 
@@ -154,7 +174,7 @@ if rank == 0:
 
     # Merge all the data files
     timers['merge'] = time.time()
-    fname = "hit_ic_ut_{0:d}.dat".format(args.res)
+    fname = pfx + ".dat"
     tmpname = 'tmp.dat'
     retcode = run_cmd('head -1 ' + oname + ' > ' + tmpname)
     for n in range(nprocs):
@@ -220,17 +240,18 @@ if rank == 0:
                     axis=2)
 
     # Print some information
-    print("  FV solution information:")
-    print('    resolution =', args.res)
-    print('    urms =', urms)
-    print('    KE = {0:f} (u:{1:f}, v:{2:f}, w:{3:f})'.format(KE,
-                                                              KEu,
-                                                              KEv,
-                                                              KEw))
-    print('    lambda0 =', lambda0)
-    print('    k0 = 2/lambda0 =', k0)
-    print('    tau = lambda0/urms =', tau)
-    print('    div u = ', np.sum(div_u))
+    logging.info("  FV solution information:")
+    logging.info('    interpolation order = {0:d}'.format(args.order))
+    logging.info('    resolution = {0:d}'.format(args.res))
+    logging.info('    urms = {0:.16f}'.format(urms))
+    logging.info('    KE = {0:f} (u:{1:f}, v:{2:f}, w:{3:f})'.format(KE,
+                                                                     KEu,
+                                                                     KEv,
+                                                                     KEw))
+    logging.info('    lambda0 = {0:.16f}'.format(lambda0))
+    logging.info('    k0 = 2/lambda0 = {0:.16f}'.format(k0))
+    logging.info('    tau = lambda0/urms = {0:.16f}'.format(tau))
+    logging.info('    div u = {0:.16e}'.format(np.sum(div_u)))
 
     # Clean up
     os.remove(tmpname)
@@ -241,7 +262,7 @@ if rank == 0:
 # output timer
 timers['total'] = time.time() - timers['total']
 if rank == 0:
-    print("  Timers:")
+    logging.info("  Timers:")
     for key, value in sorted(timers.items(), key=operator.itemgetter(1), reverse=True):
-        print("    " + key + " " + str(timedelta(seconds=value)) +
-              " (or {0:.3f} seconds)".format(value))
+        logging.info("    {0:s} {1:s} (or {2:.3f} seconds)".format(
+            key, str(timedelta(seconds=value)), value))
