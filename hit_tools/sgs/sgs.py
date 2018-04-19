@@ -51,7 +51,7 @@ class SGS:
 
         """
         self.velocities = velocities
-        self.velocities.gaussian_filter(self.width)
+        self.filtered = self.velocities.gaussian_filter(self.width)
 
     # ========================================================================
     def calculate_tau_sgs(self):
@@ -65,15 +65,15 @@ class SGS:
         """
 
         # Filtered velocity derivatives
-        dudx = self.velocities.get_filtered_velocity_derivative(0, 0)
-        dudy = self.velocities.get_filtered_velocity_derivative(0, 1)
-        dudz = self.velocities.get_filtered_velocity_derivative(0, 2)
-        dvdx = self.velocities.get_filtered_velocity_derivative(1, 0)
-        dvdy = self.velocities.get_filtered_velocity_derivative(1, 1)
-        dvdz = self.velocities.get_filtered_velocity_derivative(1, 2)
-        dwdx = self.velocities.get_filtered_velocity_derivative(2, 0)
-        dwdy = self.velocities.get_filtered_velocity_derivative(2, 1)
-        dwdz = self.velocities.get_filtered_velocity_derivative(2, 2)
+        dudx = self.filtered.get_velocity_derivative(0, 0)
+        dudy = self.filtered.get_velocity_derivative(0, 1)
+        dudz = self.filtered.get_velocity_derivative(0, 2)
+        dvdx = self.filtered.get_velocity_derivative(1, 0)
+        dvdy = self.filtered.get_velocity_derivative(1, 1)
+        dvdz = self.filtered.get_velocity_derivative(1, 2)
+        dwdx = self.filtered.get_velocity_derivative(2, 0)
+        dwdy = self.filtered.get_velocity_derivative(2, 1)
+        dwdz = self.filtered.get_velocity_derivative(2, 2)
         DuDx = [[dudx, dudy, dudz],
                 [dvdx, dvdy, dvdz],
                 [dwdx, dwdy, dwdz]]
@@ -98,7 +98,7 @@ class SGS:
         Skk = S00 + S11 + S22
 
         # SGS shear stress
-        deltabar = self.width * self.velocities.dx[0]
+        deltabar = self.width * self.filtered.dx[0]
         self.mut = self.constants.rho * deltabar**2 * Sijmag
 
         self.tau_sgs_kk = 2.0 * self.constants.CI * self.mut * Sijmag
