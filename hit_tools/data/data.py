@@ -66,4 +66,8 @@ class Data:
         :type fname: string
 
         """
-        np.savez_compressed(fname, uf=self.Uf, vf=self.Vf, wf=self.Wf)
+        np.savez_compressed(fname,
+                            L=self.L,
+                            uf=self.Uf,
+                            vf=self.Vf,
+                            wf=self.Wf)

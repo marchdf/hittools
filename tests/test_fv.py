@@ -24,8 +24,7 @@ class FVTestCase(unittest.TestCase):
         self.data.output_data(self.fname)
 
         # Load the velocity fields from the toy data
-        self.velocities = velocity.Velocity()
-        self.velocities.read(self.fname)
+        self.velocities = velocity.Velocity.fromSpectralFile(self.fname)
 
         # Define FV solution space
         self.fv = fv.FV([2, 2, 2],

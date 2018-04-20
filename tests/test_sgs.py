@@ -17,8 +17,7 @@ class SGSTestCase(unittest.TestCase):
         parent = os.path.abspath(os.path.join(__file__, '../..'))
         self.fname = os.path.abspath(os.path.join(
             parent, 'hit_tools', 'data', 'toy_data.npz'))
-        self.velocities = velocity.Velocity()
-        self.velocities.read(self.fname)
+        self.velocities = velocity.Velocity.fromSpectralFile(self.fname)
         self.width = 4
         self.sgs = sgs.SGS()
         self.sgs.set_filter_width(self.width)
