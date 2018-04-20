@@ -1,0 +1,20 @@
+CHANGES
+=======
+
+* Added spectra calculations to the velocity class
+* Enabled logging
+* Added input options to projection script
+* Minor cleanup
+* Added diagnostics to projection script
+* Removed projection stuff that didn't make sense
+* Minor cleanup
+* Reorg of project
+* Finalized FV projection script
+* added NUFFT version of FV projection
+* Added numba version of velocity interpolation
+* Add script to actually do the FV projection
+* Minor FV functionality change (and speedup)
+* Added a fast projection scheme
+* Added many tests and FV class
+* Restructuring, test updates, and documentation structure
+* Initial commit
