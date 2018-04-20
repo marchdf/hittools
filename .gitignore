@@ -10,3 +10,7 @@
 
 # OSX
 .DS_Store
+
+# build directories
+build
+_build

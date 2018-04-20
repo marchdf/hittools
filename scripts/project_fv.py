@@ -22,8 +22,8 @@ from mpi4py import MPI
 
 sys.path.insert(0, os.path.abspath(
     os.path.join(os.path.dirname(__file__), '../')))
-import hit_tools.velocity.velocity as velocity
-import hit_tools.fv.fv as fv
+import hittools.velocity.velocity as velocity
+import hittools.fv.fv as fv
 
 
 # ========================================================================
@@ -258,6 +258,8 @@ if rank == 0:
 
     timers['statistics'] = time.time() - timers['statistics']
 
+# Clean up
+os.remove(oname)
 
 # output timer
 timers['total'] = time.time() - timers['total']
