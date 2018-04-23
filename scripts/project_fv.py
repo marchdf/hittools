@@ -146,8 +146,7 @@ fvs = fv.FV([args.res // pmap[0], args.res // pmap[1], args.res // pmap[2]],
 # Load the velocity fields
 if rank == 0:
     logging.info("  Loading file: {0:s}".format(args.iname))
-velocities = velocity.Velocity()
-velocities.read(args.iname)
+velocities = velocity.Velocity.fromSpectralFile(args.iname)
 
 # Project velocities on FV space
 fvs.fast_projection_nufft(velocities, order=args.order)
