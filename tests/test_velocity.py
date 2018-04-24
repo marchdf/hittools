@@ -39,11 +39,25 @@ class VelocityTestCase(unittest.TestCase):
         x = np.linspace(0, L[0], N[0])
         y = np.linspace(0, L[1], N[1])
         z = np.linspace(0, L[2], N[2])
-        X, Y, Z = np.meshgrid(x, y, z)
+        X, Y, Z = np.meshgrid(x, y, z, indexing='ij')
         U = [np.cos(2 * X) + np.cos(4 * Y) + np.cos(8 * Z),
              np.cos(4 * X) + np.cos(8 * Y) + np.cos(2 * Z),
              np.cos(8 * X) + np.cos(2 * Y) + np.cos(4 * Z)]
         self.spec_velocities = velocity.Velocity(L, U)
+
+        # Velocities for divergence tests (TG vortex)
+        N = np.array([32, 32, 32], dtype=np.int64)
+        L = np.array([2 * np.pi, 2 * np.pi, 2 * np.pi])
+        dx = L / N
+        x = np.arange(0, L[0], dx[0])
+        y = np.arange(0, L[1], dx[1])
+        z = np.arange(0, L[2], dx[2])
+        X, Y, Z = np.meshgrid(x, y, z, indexing='ij')
+        a = [2, 4, -6]  # sum is zero for div u = 0
+        U = [np.cos(a[0] * X) * np.sin(a[1] * Y) * np.sin(a[2] * Z),
+             np.sin(a[0] * X) * np.cos(a[1] * Y) * np.sin(a[2] * Z),
+             np.sin(a[0] * X) * np.sin(a[1] * Y) * np.cos(a[2] * Z)]
+        self.tg_velocities = velocity.Velocity(L, U)
 
     def test_fromSpectralFile(self):
         """Is the velocity file reading function correct?"""
@@ -77,7 +91,7 @@ class VelocityTestCase(unittest.TestCase):
         npt.assert_almost_equal(np.linalg.norm(filtered.Uf[2]),
                                 2837.134018506893)
 
-    def test_filtered_velocity_derivative(self):
+    def test_velocity_derivative(self):
         """Is the velocity derivative correct?"""
         filtered = self.velocities.gaussian_filter(self.width)
         dudx = filtered.get_velocity_derivative(0, 0)
@@ -108,6 +122,13 @@ class VelocityTestCase(unittest.TestCase):
                                 44.330219039170167)
         npt.assert_almost_equal(np.linalg.norm(dwdz),
                                 88.660438078340349)
+
+    def test_get_velocity_divergence(self):
+        """Is the velocity divergence correct?"""
+
+        npt.assert_allclose(self.tg_velocities.get_velocity_divergence(),
+                            0.0,
+                            atol=1e-13)
 
     def test_get_interpolated_velocity(self):
         """Is the interpolation with DFT coefficients correct?"""
@@ -277,6 +298,26 @@ class VelocityTestCase(unittest.TestCase):
         structure = self.spec_velocities.structure_functions()
         npt.assert_array_almost_equal(structure.SL,
                                       np.array([0.,
+                                                0.0785096199929016,
+                                                0.301723786914015,
+                                                0.6350383967300699,
+                                                1.0273238570414358,
+                                                1.4187430801470575,
+                                                1.7498429304380465,
+                                                1.9705439637367888,
+                                                2.0476761798337342,
+                                                1.9699335870800814,
+                                                1.7495128845335444,
+                                                1.4202020757179299,
+                                                1.0322182020004451,
+                                                0.6445799848193108,
+                                                0.3161686585952469,
+                                                0.0968242917758608,
+                                                0.0198170012870652]),
+                                      decimal=10)
+
+        npt.assert_array_almost_equal(structure.ST1,
+                                      np.array([0.,
                                                 0.3013132971454286,
                                                 1.0238627309018322,
                                                 1.7385989137636211,
@@ -295,7 +336,7 @@ class VelocityTestCase(unittest.TestCase):
                                                 0.0782862747188336]),
                                       decimal=10)
 
-        npt.assert_array_almost_equal(structure.ST1,
+        npt.assert_array_almost_equal(structure.ST2,
                                       np.array([0.,
                                                 1.0178163823125026,
                                                 2.0015211367847403,
@@ -313,26 +354,6 @@ class VelocityTestCase(unittest.TestCase):
                                                 1.7709728609211628,
                                                 1.0232015273797213,
                                                 0.2969253153556487]),
-                                      decimal=10)
-
-        npt.assert_array_almost_equal(structure.ST2,
-                                      np.array([0.,
-                                                0.0785096199929016,
-                                                0.301723786914015,
-                                                0.6350383967300699,
-                                                1.0273238570414358,
-                                                1.4187430801470575,
-                                                1.7498429304380465,
-                                                1.9705439637367888,
-                                                2.0476761798337342,
-                                                1.9699335870800814,
-                                                1.7495128845335444,
-                                                1.4202020757179299,
-                                                1.0322182020004451,
-                                                0.6445799848193108,
-                                                0.3161686585952469,
-                                                0.0968242917758608,
-                                                0.0198170012870652]),
                                       decimal=10)
 
     def test_dissipation(self):

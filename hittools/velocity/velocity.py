@@ -127,6 +127,20 @@ class Velocity(object):
         return np.fft.irfftn(1j * self.K[direction] * self.Uf[velocity])
 
     # ========================================================================
+    def get_velocity_divergence(self):
+        """
+        Return the real space velocity divergence.
+
+        :return: divergence of velocity field in real space
+        :rtype: array
+
+        """
+
+        return self.get_velocity_derivative(0, 0) \
+            + self.get_velocity_derivative(1, 1) \
+            + self.get_velocity_derivative(2, 2)
+
+    # ========================================================================
     def get_interpolated_velocity(self, xi):
         """
         Return the velocity interpolated using the Fourier coefficients.
@@ -230,7 +244,7 @@ class Velocity(object):
              np.fft.fftfreq(Uf[0].shape[1]) * self.N[1],
              np.fft.fftfreq(Uf[0].shape[2]) * self.N[2]]
         kmax = [k[0].max(), k[1].max(), k[2].max()]
-        K = np.meshgrid(k[0], k[1], k[2])
+        K = np.meshgrid(k[0], k[1], k[2], indexing='ij')
         kmag = np.sqrt(K[0]**2 + K[1]**2 + K[2]**2)
         halfN = np.array([int(n / 2) for n in self.N], dtype=np.int64)
         kbins = np.hstack((-1e-16,
@@ -335,7 +349,7 @@ class Velocity(object):
         k = [np.fft.fftfreq(Uf[0].shape[0]) * self.N[0],
              np.fft.fftfreq(Uf[0].shape[1]) * self.N[1],
              np.fft.fftfreq(Uf[0].shape[2]) * self.N[2]]
-        K = np.meshgrid(k[0], k[1], k[2])
+        K = np.meshgrid(k[0], k[1], k[2], indexing='ij')
         kmag2 = K[0]**2 + K[1]**2 + K[2]**2
 
         # Energy in Fourier space
