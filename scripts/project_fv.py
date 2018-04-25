@@ -259,9 +259,6 @@ if rank == 0:
 
     timers['statistics'] = time.time() - timers['statistics']
 
-# Clean up
-os.remove(oname)
-
 # output timer
 timers['total'] = time.time() - timers['total']
 if rank == 0:
