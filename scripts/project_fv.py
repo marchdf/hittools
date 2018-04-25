@@ -111,11 +111,12 @@ coords = grid.Get_coords(rank)
 if rank == 0:
     pfx = "hit_ic_ut_{0:d}".format(args.res)
     logname = pfx + '.log'
-    logging.basicConfig(level=logging.INFO,
-                        format='%(asctime)s %(name)-12s %(levelname)-8s %(message)s',
-                        datefmt='%m-%d %H:%M',
-                        filename=logname,
-                        filemode='w')
+    logging.basicConfig(
+        level=logging.INFO,
+        format='%(asctime)s %(name)-12s %(levelname)-8s %(message)s',
+        datefmt='%m-%d %H:%M',
+        filename=logname,
+        filemode='w')
     # define a Handler which writes INFO messages or higher to the sys.stderr
     console = logging.StreamHandler()
     console.setLevel(logging.INFO)
@@ -219,12 +220,12 @@ if rank == 0:
     tau = lambda0 / urms
 
     # Incompressible code so div u = 0
-    div_u = np.gradient(dat['u'].values.reshape((args.res,
-                                                 args.res,
-                                                 args.res),
-                                                order='F'),
-                        fvs.dx[0],
-                        axis=0) + \
+    divu = np.gradient(dat['u'].values.reshape((args.res,
+                                                args.res,
+                                                args.res),
+                                               order='F'),
+                       fvs.dx[0],
+                       axis=0) + \
         np.gradient(dat['v'].values.reshape((args.res,
                                              args.res,
                                              args.res),
@@ -237,6 +238,7 @@ if rank == 0:
                                             order='F'),
                     fvs.dx[2],
                     axis=2)
+    dilatation = np.mean(divu**2)
 
     # Print some information
     logging.info("  FV solution information:")
@@ -250,7 +252,7 @@ if rank == 0:
     logging.info('    lambda0 = {0:.16f}'.format(lambda0))
     logging.info('    k0 = 2/lambda0 = {0:.16f}'.format(k0))
     logging.info('    tau = lambda0/urms = {0:.16f}'.format(tau))
-    logging.info('    div u = {0:.16e}'.format(np.sum(div_u)))
+    logging.info('    dilatation (FD) = 0 = {0:.16e}'.format(dilatation))
 
     # Clean up
     os.remove(tmpname)
@@ -264,6 +266,7 @@ os.remove(oname)
 timers['total'] = time.time() - timers['total']
 if rank == 0:
     logging.info("  Timers:")
-    for key, value in sorted(timers.items(), key=operator.itemgetter(1), reverse=True):
+    for key, value in sorted(
+            timers.items(), key=operator.itemgetter(1), reverse=True):
         logging.info("    {0:s} {1:s} (or {2:.3f} seconds)".format(
             key, str(timedelta(seconds=value)), value))
