@@ -77,6 +77,10 @@ parser.add_argument('-f', '--file',
                     type=str,
                     required=True,
                     action=FullPaths)
+parser.add_argument('-b', '--binfmt',
+                    dest='binfmt',
+                    help='Use a binary output format',
+                    action='store_true')
 args = parser.parse_args()
 
 
@@ -88,8 +92,8 @@ args = parser.parse_args()
 
 # Timers
 timers = {'projection': 0,
-          'merge': 0,
-          'statistics': 0,
+          'loading': 0,
+          'writing': 0,
           'total': 0}
 timers['total'] = time.time()
 
@@ -109,7 +113,7 @@ coords = grid.Get_coords(rank)
 
 # Logging information
 if rank == 0:
-    pfx = "hit_ic_ut_{0:d}".format(args.res)
+    pfx = "fv_{0:d}".format(args.res)
     logname = pfx + '.log'
     logging.basicConfig(
         level=logging.INFO,
@@ -133,7 +137,7 @@ if rank == 0:
 
 # ========================================================================
 # Perform the projection
-timers['projection'] = time.time()
+
 
 # Define FV solution space
 pmap = grid.Get_topo()[0]
@@ -147,121 +151,48 @@ fvs = fv.FV([args.res // pmap[0], args.res // pmap[1], args.res // pmap[2]],
 # Load the velocity fields
 if rank == 0:
     logging.info("  Loading file: {0:s}".format(args.iname))
+timers['loading'] = time.time()
 velocities = velocity.Velocity.fromSpectralFile(args.iname)
+timers['loading'] = time.time() - timers['loading']
 
 # Project velocities on FV space
+timers['projection'] = time.time()
 fvs.fast_projection_nufft(velocities, order=args.order)
+timers['projection'] = time.time() - timers['projection']
 
 # ========================================================================
 # Write out the data files individually (we will merge later)
+timers['writing'] = time.time()
 dat = fvs.to_df()
 
 # Sort coordinates to be read easily in Fortran
 dat.sort_values(by=['z', 'y', 'x'], inplace=True)
 
-oname = "fv_{0:d}_{1:d}_{2:d}.dat".format(args.res, nprocs, rank)
-dat.to_csv(oname,
-           columns=['x', 'y', 'z', 'u', 'v', 'w'],
-           float_format='%.18e',
-           index=False)
+# Rearrange the columns
+dat = dat[['x', 'y', 'z', 'u', 'v', 'w']]
 
-timers['projection'] = time.time() - timers['projection']
+opfx = "fv_{0:d}_{1:d}_{2:d}".format(args.res, nprocs, rank)
+if args.binfmt:
+    oname = opfx + ".in"
+    dat.values.tofile(oname)
+else:
+    oname = opfx + ".dat"
+    dat.to_csv(oname,
+               columns=['x', 'y', 'z', 'u', 'v', 'w'],
+               float_format='%.18e',
+               index=False)
+
+timers['writing'] = time.time() - timers['writing']
 
 # ========================================================================
-# Merge the files together on rank 0, do statistics and normalize
+# Output information
 comm.Barrier()
+timers['total'] = time.time() - timers['total']
 if rank == 0:
-
-    # Merge all the data files
-    timers['merge'] = time.time()
-    fname = pfx + ".dat"
-    tmpname = 'tmp.dat'
-    retcode = run_cmd('head -1 ' + oname + ' > ' + tmpname)
-    for n in range(nprocs):
-        tname = "fv_{0:d}_{1:d}_{2:d}.dat".format(args.res, nprocs, n)
-        retcode = run_cmd('tail -n +2 -q ' + tname + ' >> ' + tmpname)
-
-    # Sort coordinates to be read easily in Fortran
-    retcode = run_cmd('head -n 1 ' + tmpname + ' > ' + fname)
-    retcode = run_cmd('tail -n +2 -q ' +
-                      tmpname +
-                      ' | sort -k3 -k2 -k1 -g -t, >> ' +
-                      fname)
-    timers['merge'] = time.time() - timers['merge']
-
-    # Do some statistics
-    timers['statistics'] = time.time()
-    dat = pd.read_csv(fname)
-
-    # Calculate urms
-    umag = dat['u']**2 + dat['v']**2 + dat['w']**2
-    urms = np.sqrt(np.mean(umag) / 3)
-
-    # Calculate kinetic energy and other integrals
-    KE = 0.5 * np.mean(umag)
-    KEu = 0.5 * np.mean(dat['u']**2)
-    KEv = 0.5 * np.mean(dat['v']**2)
-    KEw = 0.5 * np.mean(dat['w']**2)
-
-    # Calculate Taylor length scale (note Fortran ordering assumption for
-    # gradient)
-    u2 = np.mean(dat['u']**2)
-    dudx2 = np.mean(
-        np.gradient(
-            dat['u'].values.reshape(
-                (args.res,
-                 args.res,
-                 args.res),
-                order='F'),
-            fvs.dx[0],
-            axis=0)**2)
-    lambda0 = np.sqrt(u2 / dudx2)
-    k0 = 2. / lambda0
-    tau = lambda0 / urms
-
-    # Incompressible code so div u = 0
-    divu = np.gradient(dat['u'].values.reshape((args.res,
-                                                args.res,
-                                                args.res),
-                                               order='F'),
-                       fvs.dx[0],
-                       axis=0) + \
-        np.gradient(dat['v'].values.reshape((args.res,
-                                             args.res,
-                                             args.res),
-                                            order='F'),
-                    fvs.dx[1],
-                    axis=1) + \
-        np.gradient(dat['w'].values.reshape((args.res,
-                                             args.res,
-                                             args.res),
-                                            order='F'),
-                    fvs.dx[2],
-                    axis=2)
-    dilatation = np.mean(divu**2)
-
     # Print some information
     logging.info("  FV solution information:")
     logging.info('    interpolation order = {0:d}'.format(args.order))
     logging.info('    resolution = {0:d}'.format(args.res))
-    logging.info('    urms = {0:.16f}'.format(urms))
-    logging.info('    KE = {0:f} (u:{1:f}, v:{2:f}, w:{3:f})'.format(KE,
-                                                                     KEu,
-                                                                     KEv,
-                                                                     KEw))
-    logging.info('    lambda0 = {0:.16f}'.format(lambda0))
-    logging.info('    k0 = 2/lambda0 = {0:.16f}'.format(k0))
-    logging.info('    tau = lambda0/urms = {0:.16f}'.format(tau))
-    logging.info('    dilatation (FD) = 0 = {0:.16e}'.format(dilatation))
-
-    # Clean up
-    os.remove(tmpname)
-
-    timers['statistics'] = time.time() - timers['statistics']
-
-# output timer
-timers['total'] = time.time() - timers['total']
-if rank == 0:
     logging.info("  Timers:")
     for key, value in sorted(
             timers.items(), key=operator.itemgetter(1), reverse=True):
