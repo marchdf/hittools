@@ -12,11 +12,3 @@ for ((rank=0;rank<${nprocs};++rank))
 do
     tail -n +2 -q ${pfx}_${res}_${nprocs}_${rank}.dat >> ${tmpname}
 done
-
-# Sort the merged file
-oname="hit_ic_ut_${res}.dat"
-head -n 1 ${tmpname} > ${oname}
-tail -n +2 -q ${tmpname} | sort -k3 -k2 -k1 -g -t, >> ${oname}
-
-# Clean
-rm ${tmpname}

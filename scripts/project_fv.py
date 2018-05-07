@@ -103,10 +103,14 @@ xmax = 2 * np.pi
 L = xmax - xmin
 
 # MPI setup
+minimize_communication = False
 comm = MPI.COMM_WORLD
 rank = comm.Get_rank()
 nprocs = comm.Get_size()
-dimensions = MPI.Compute_dims(nprocs, 3)
+if minimize_communication:
+    dimensions = MPI.Compute_dims(nprocs, 3)
+else:  # you won't have to sort data on merge
+    dimensions = [1, 1, nprocs]
 periodicity = (False, False, False)
 grid = comm.Create_cart(dimensions, periodicity, reorder=True)
 coords = grid.Get_coords(rank)
@@ -135,9 +139,15 @@ if rank == 0:
     logging.info("  Dim: " + str(grid.Get_dim()))
     logging.info("  Topology: " + str(grid.Get_topo()))
 
+# Exit with error if procs doesn't divide the space evenly
+if (not minimize_communication) and (args.res % nprocs != 0):
+    sys.exit(
+        "Number of processors ({0:d}) does not divide z-direction nicely (N cells = {1:d})".format(
+            nprocs,
+            args.res))
+
 # ========================================================================
 # Perform the projection
-
 
 # Define FV solution space
 pmap = grid.Get_topo()[0]
