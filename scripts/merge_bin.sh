@@ -14,6 +14,6 @@ do
 done
 
 # Perform merge
-tmpname="merged_${res}.in"
-cat "${list[@]}" > ${tmpname}
+oname="hit_ic_ut_${res}.in"
+cat "${list[@]}" > ${oname}
 

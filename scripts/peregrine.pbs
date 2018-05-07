@@ -21,20 +21,44 @@ CONDA_PATH=${HOME}/miniconda3/bin
 source ${CONDA_PATH}/activate main
 
 # 32^3
-mpirun -np 4 ./project_fv.py -r 32 --order 2 -f ../hittools/data/hit_ut_wavespace_256.npz
+res=32
+nprocs=4
+mpirun -np ${nprocs} ./project_fv.py -r ${res} --order 2 -f ../hittools/data/hit_ut_wavespace_256.npz -b
+./merge_bin.sh ${res} ${nprocs}
+./statistics.py -f hit_ic_ut_${res}.dat -b
 
 # 64^3
-mpirun -np 8 ./project_fv.py -r 64 --order 2 -f ../hittools/data/hit_ut_wavespace_256.npz
+res=64
+nprocs=8
+mpirun -np ${nprocs} ./project_fv.py -r ${res} --order 2 -f ../hittools/data/hit_ut_wavespace_256.npz -b
+./merge_bin.sh ${res} ${nprocs}
+./statistics.py -f hit_ic_ut_${res}.dat -b
 
 # 128^3
-mpirun -np 16 ./project_fv.py -r 128 --order 2 -f ../hittools/data/hit_ut_wavespace_256.npz
+res=128
+nprocs=16
+mpirun -np ${nprocs} ./project_fv.py -r ${res} --order 2 -f ../hittools/data/hit_ut_wavespace_256.npz -b
+./merge_bin.sh ${res} ${nprocs}
+./statistics.py -f hit_ic_ut_${res}.dat -b
 
 # 256^3
-mpirun -np 16 ./project_fv.py -r 256 --order 2 -f ../hittools/data/hit_ut_wavespace_256.npz
+res=256
+nprocs=16
+mpirun -np ${nprocs} ./project_fv.py -r ${res} --order 2 -f ../hittools/data/hit_ut_wavespace_256.npz -b
+./merge_bin.sh ${res} ${nprocs}
+./statistics.py -f hit_ic_ut_${res}.dat -b
 
 # 512^3
-mpirun -np 64 ./project_fv.py -r 512 --order 2 -f ../hittools/data/hit_ut_wavespace_256.npz
+res=512
+nprocs=64
+mpirun -np ${nprocs} ./project_fv.py -r ${res} --order 2 -f ../hittools/data/hit_ut_wavespace_256.npz -b
+./merge_bin.sh ${res} ${nprocs}
+./statistics.py -f hit_ic_ut_${res}.dat -b
 
 # 1024^3
-mpirun -np 256 ./project_fv.py -r 1024 --order 2 -f ../hittools/data/hit_ut_wavespace_256.npz
+res=1024
+nprocs=256
+mpirun -np ${nprocs} ./project_fv.py -r ${res} --order 2 -f ../hittools/data/hit_ut_wavespace_256.npz -b
+./merge_bin.sh ${res} ${nprocs}
+./statistics.py -f hit_ic_ut_${res}.dat -b
 
