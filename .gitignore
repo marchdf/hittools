@@ -14,3 +14,6 @@
 # build directories
 build
 _build
+
+# Some binary files
+*.in

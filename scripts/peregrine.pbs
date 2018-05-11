@@ -2,7 +2,7 @@
 
 #PBS -l walltime=96:00:00  # WALLTIME limit
 #PBS -q bigmem  # queue
-#PBS -l nodes=16:ppn=16  # Number of nodes, put x processes on each
+#PBS -l nodes=32:ppn=16  # Number of nodes, put x processes on each
 #PBS -lfeature=256GB
 #PBS -N project_fv  # Name of job
 #PBS -A ExaCT  # Project handle
@@ -25,40 +25,39 @@ res=32
 nprocs=4
 mpirun -np ${nprocs} ./project_fv.py -r ${res} --order 2 -f ../hittools/data/hit_ut_wavespace_256.npz -b
 ./merge_bin.sh ${res} ${nprocs}
-./statistics.py -f hit_ic_ut_${res}.dat -b
+./statistics.py -f hit_ic_ut_${res}.in -b
 
 # 64^3
 res=64
 nprocs=8
 mpirun -np ${nprocs} ./project_fv.py -r ${res} --order 2 -f ../hittools/data/hit_ut_wavespace_256.npz -b
 ./merge_bin.sh ${res} ${nprocs}
-./statistics.py -f hit_ic_ut_${res}.dat -b
+./statistics.py -f hit_ic_ut_${res}.in -b
 
 # 128^3
 res=128
 nprocs=16
 mpirun -np ${nprocs} ./project_fv.py -r ${res} --order 2 -f ../hittools/data/hit_ut_wavespace_256.npz -b
 ./merge_bin.sh ${res} ${nprocs}
-./statistics.py -f hit_ic_ut_${res}.dat -b
+./statistics.py -f hit_ic_ut_${res}.in -b
 
 # 256^3
 res=256
 nprocs=16
 mpirun -np ${nprocs} ./project_fv.py -r ${res} --order 2 -f ../hittools/data/hit_ut_wavespace_256.npz -b
 ./merge_bin.sh ${res} ${nprocs}
-./statistics.py -f hit_ic_ut_${res}.dat -b
+./statistics.py -f hit_ic_ut_${res}.in -b
 
 # 512^3
 res=512
 nprocs=64
 mpirun -np ${nprocs} ./project_fv.py -r ${res} --order 2 -f ../hittools/data/hit_ut_wavespace_256.npz -b
 ./merge_bin.sh ${res} ${nprocs}
-./statistics.py -f hit_ic_ut_${res}.dat -b
+./statistics.py -f hit_ic_ut_${res}.in -b
 
 # 1024^3
 res=1024
-nprocs=256
+nprocs=512
 mpirun -np ${nprocs} ./project_fv.py -r ${res} --order 2 -f ../hittools/data/hit_ut_wavespace_256.npz -b
 ./merge_bin.sh ${res} ${nprocs}
-./statistics.py -f hit_ic_ut_${res}.dat -b
-
+./statistics.py -f hit_ic_ut_${res}.in -b
