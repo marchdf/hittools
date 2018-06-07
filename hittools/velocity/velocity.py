@@ -269,14 +269,12 @@ class Velocity(object):
         # Filter the data with ellipsoid filter
         ellipse = (K[0] / kmax[0]) ** 2 + (K[1] / kmax[1]) ** 2 + (
             K[2] / kmax[2]
-        ) ** 2 <= 1.0
-        Ef = np.where(ellipse, Ef, np.nan)
-        K = (
-            np.where(ellipse, K[0], np.nan),
-            np.where(ellipse, K[1], np.nan),
-            np.where(ellipse, K[2], np.nan),
-        )
-        kmag = np.where(ellipse, kmag, np.nan)
+        ) ** 2 > 1.0
+        Ef[ellipse] = np.nan
+        K[0][ellipse] = np.nan
+        K[1][ellipse] = np.nan
+        K[2][ellipse] = np.nan
+        kmag[ellipse] = np.nan
 
         # 1D spectra Eii(kj)
         for j in range(3):
@@ -314,8 +312,9 @@ class Velocity(object):
         E = np.zeros(len(kbins) - 1)
         kavg = np.zeros(len(kbins) - 1)
         for k, n in enumerate(range(1, len(kbins))):
-            E[k] = np.mean(E3D.flat[whichbin == n])
-            kavg[k] = np.mean(kmag.flat[whichbin == n])
+            whichbin_idx = whichbin == n
+            E[k] = np.mean(E3D.flat[whichbin_idx])
+            kavg[k] = np.mean(kmag.flat[whichbin_idx])
         E[E < 1e-13] = 0.0
 
         # Store the data
