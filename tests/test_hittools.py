@@ -15,5 +15,5 @@ class HITToolsTestCase(unittest.TestCase):
         self.N = np.array([32, 32, 32], dtype=np.int64)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

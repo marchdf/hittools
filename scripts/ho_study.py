@@ -29,8 +29,9 @@ import hittools.fv.fv as fv
 # ========================================================================
 def get_git_revision_hash():
     """Returns the git version of this project"""
-    return subprocess.check_output(['git', 'describe', '--always'],
-                                   universal_newlines=True)
+    return subprocess.check_output(
+        ["git", "describe", "--always"], universal_newlines=True
+    )
 
 
 def get_DuDx(velocities):
@@ -45,9 +46,7 @@ def get_DuDx(velocities):
     dwdy = velocities.get_filtered_velocity_derivative(2, 1)
     dwdz = velocities.get_filtered_velocity_derivative(2, 2)
 
-    return [[dudx, dudy, dudz],
-            [dvdx, dvdy, dvdz],
-            [dwdx, dwdy, dwdz]]
+    return [[dudx, dudy, dudz], [dvdx, dvdy, dvdz], [dwdx, dwdy, dwdz]]
 
 
 def get_Sij(velocities):
@@ -64,14 +63,12 @@ def get_Sij(velocities):
     for i in range(3):
         for j in range(3):
             rateofstrain = 0.5 * (DuDx[i][j] + DuDx[j][i])
-            Sijmag += rateofstrain**2
+            Sijmag += rateofstrain ** 2
     Sijmag = np.sqrt(2.0 * Sijmag)
 
     Skk = S00 + S11 + S22
 
-    return [[S00, S01, S02],
-            [S01, S11, S12],
-            [S02, S12, S22]], Sijmag, Skk
+    return [[S00, S01, S02], [S01, S11, S12], [S02, S12, S22]], Sijmag, Skk
 
 
 def get_tau_sgs_spectral(width, velocities):
@@ -79,25 +76,24 @@ def get_tau_sgs_spectral(width, velocities):
     Sij, Sijmag, Skk = get_Sij(velocities)
     deltabar = width * velocities.dx[0]
     const = constants.Constants()
-    mut = const.rho * deltabar**2 * Sijmag
+    mut = const.rho * deltabar ** 2 * Sijmag
 
     tau_sgs_kk = 2.0 * const.CI * mut * Sijmag
 
-    tau_sgs_00 = -2.0 * const.Cs**2 * mut * \
-        (Sij[0][0] - Skk / 3.) - tau_sgs_kk / 3.
-    tau_sgs_01 = -2.0 * const.Cs**2 * mut * Sij[0][1]
-    tau_sgs_02 = -2.0 * const.Cs**2 * mut * Sij[0][2]
+    tau_sgs_00 = -2.0 * const.Cs ** 2 * mut * (Sij[0][0] - Skk / 3.) - tau_sgs_kk / 3.
+    tau_sgs_01 = -2.0 * const.Cs ** 2 * mut * Sij[0][1]
+    tau_sgs_02 = -2.0 * const.Cs ** 2 * mut * Sij[0][2]
 
-    tau_sgs_11 = -2.0 * const.Cs**2 * mut * \
-        (Sij[1][1] - Skk / 3.) - tau_sgs_kk / 3.
-    tau_sgs_12 = -2.0 * const.Cs**2 * mut * Sij[1][2]
+    tau_sgs_11 = -2.0 * const.Cs ** 2 * mut * (Sij[1][1] - Skk / 3.) - tau_sgs_kk / 3.
+    tau_sgs_12 = -2.0 * const.Cs ** 2 * mut * Sij[1][2]
 
-    tau_sgs_22 = -2.0 * const.Cs**2 * mut * \
-        (Sij[2][2] - Skk / 3.) - tau_sgs_kk / 3.
+    tau_sgs_22 = -2.0 * const.Cs ** 2 * mut * (Sij[2][2] - Skk / 3.) - tau_sgs_kk / 3.
 
-    return [[tau_sgs_00, tau_sgs_01, tau_sgs_02],
-            [tau_sgs_01, tau_sgs_11, tau_sgs_12],
-            [tau_sgs_02, tau_sgs_12, tau_sgs_22]], tau_sgs_kk
+    return [
+        [tau_sgs_00, tau_sgs_01, tau_sgs_02],
+        [tau_sgs_01, tau_sgs_11, tau_sgs_12],
+        [tau_sgs_02, tau_sgs_12, tau_sgs_22],
+    ], tau_sgs_kk
 
 
 # ========================================================================
@@ -105,23 +101,20 @@ def get_tau_sgs_spectral(width, velocities):
 # Main
 #
 # ========================================================================
-if __name__ == '__main__':
+if __name__ == "__main__":
 
     # Parse arguments
-    parser = argparse.ArgumentParser(
-        description='Main script for the study')
-    parser.add_argument(
-        '-s', '--show', help='Show the plots', action='store_true')
+    parser = argparse.ArgumentParser(description="Main script for the study")
+    parser.add_argument("-s", "--show", help="Show the plots", action="store_true")
     args = parser.parse_args()
 
     # Problem setup
     start = time.time()
-    print('Code version: ', get_git_revision_hash())
+    print("Code version: ", get_git_revision_hash())
 
     # Load the velocity data
-    parent = os.path.abspath(os.path.join(__file__, '..'))
-    fname = os.path.abspath(os.path.join(
-        parent, 'hittools', 'data', 'toy_data.npz'))
+    parent = os.path.abspath(os.path.join(__file__, ".."))
+    fname = os.path.abspath(os.path.join(parent, "hittools", "data", "toy_data.npz"))
     velocities = velocity.Velocity()
     velocities.read(fname)
 
@@ -132,5 +125,8 @@ if __name__ == '__main__':
 
     # Output timer
     end = time.time() - start
-    print("Elapsed time " + str(timedelta(seconds=end)) +
-          " (or {0:f} seconds)".format(end))
+    print(
+        "Elapsed time "
+        + str(timedelta(seconds=end))
+        + " (or {0:f} seconds)".format(end)
+    )

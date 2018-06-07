@@ -20,7 +20,7 @@ import scipy.integrate as spi
 #
 # ========================================================================
 class Velocity(object):
-    'Velocity data'
+    "Velocity data"
 
     # ========================================================================
     def __init__(self, L, U, Uf=None):
@@ -38,13 +38,12 @@ class Velocity(object):
         self.N = np.array(self.U[0].shape, dtype=np.int64)
         self.dx = self.L / np.asarray(self.N, dtype=np.float64)
         self.x = [np.arange(0, self.L[c], self.dx[c]) for c in range(3)]
-        self.k = [np.fft.fftfreq(self.N[0]) * self.N[0],
-                  np.fft.fftfreq(self.N[1]) * self.N[1],
-                  np.fft.rfftfreq(self.N[2]) * self.N[2]]
-        self.K = np.meshgrid(self.k[0],
-                             self.k[1],
-                             self.k[2],
-                             indexing='ij')
+        self.k = [
+            np.fft.fftfreq(self.N[0]) * self.N[0],
+            np.fft.fftfreq(self.N[1]) * self.N[1],
+            np.fft.rfftfreq(self.N[2]) * self.N[2],
+        ]
+        self.K = np.meshgrid(self.k[0], self.k[1], self.k[2], indexing="ij")
 
         if Uf is None:
             self.Uf = [np.fft.rfftn(self.U[c]) for c in range(3)]
@@ -63,11 +62,11 @@ class Velocity(object):
 
         # load the data
         data = np.load(fname)
-        Uf = [data['uf'], data['vf'], data['wf']]
+        Uf = [data["uf"], data["vf"], data["wf"]]
 
         # Inverse fft to get spatial data
         U = [np.fft.irfftn(Uf[c]) for c in range(3)]
-        return cls(data['L'], U, Uf=Uf)
+        return cls(data["L"], U, Uf=Uf)
 
     # ========================================================================
     def gaussian_filter(self, width):
@@ -93,20 +92,14 @@ class Velocity(object):
 
         gamma = 6.0
         sigma = width / np.sqrt(2 * gamma)
-        Ufh = [spn.fourier_gaussian(self.Uf[0],
-                                    sigma,
-                                    n=self.N[0]),
-               spn.fourier_gaussian(self.Uf[1],
-                                    sigma,
-                                    n=self.N[0]),
-               spn.fourier_gaussian(self.Uf[2],
-                                    sigma,
-                                    n=self.N[0])]
+        Ufh = [
+            spn.fourier_gaussian(self.Uf[0], sigma, n=self.N[0]),
+            spn.fourier_gaussian(self.Uf[1], sigma, n=self.N[0]),
+            spn.fourier_gaussian(self.Uf[2], sigma, n=self.N[0]),
+        ]
 
         # Same as spn.filters.gaussian_filter(U,sigma,mode='wrap',truncate=6)
-        Uh = [np.fft.irfftn(Ufh[0]),
-              np.fft.irfftn(Ufh[1]),
-              np.fft.irfftn(Ufh[2])]
+        Uh = [np.fft.irfftn(Ufh[0]), np.fft.irfftn(Ufh[1]), np.fft.irfftn(Ufh[2])]
 
         return Velocity(self.L, Uh, Uf=Ufh)
 
@@ -136,9 +129,11 @@ class Velocity(object):
 
         """
 
-        return self.get_velocity_derivative(0, 0) \
-            + self.get_velocity_derivative(1, 1) \
+        return (
+            self.get_velocity_derivative(0, 0)
+            + self.get_velocity_derivative(1, 1)
             + self.get_velocity_derivative(2, 2)
+        )
 
     # ========================================================================
     def get_interpolated_velocity(self, xi):
@@ -152,16 +147,20 @@ class Velocity(object):
 
         """
 
-        A = np.exp(2 * np.pi * 1j * (xi[0] * self.K[0] / self.L[0] +
-                                     xi[1] * self.K[1] / self.L[1] +
-                                     xi[2] * self.K[2] / self.L[2]))
+        A = np.exp(
+            2
+            * np.pi
+            * 1j
+            * (
+                xi[0] * self.K[0] / self.L[0]
+                + xi[1] * self.K[1] / self.L[1]
+                + xi[2] * self.K[2] / self.L[2]
+            )
+        )
 
-        ui = np.real(2. / np.prod(self.N)
-                     * np.sum(A * self.Uf[0]))
-        vi = np.real(2. / np.prod(self.N)
-                     * np.sum(A * self.Uf[1]))
-        wi = np.real(2. / np.prod(self.N)
-                     * np.sum(A * self.Uf[2]))
+        ui = np.real(2. / np.prod(self.N) * np.sum(A * self.Uf[0]))
+        vi = np.real(2. / np.prod(self.N) * np.sum(A * self.Uf[1]))
+        wi = np.real(2. / np.prod(self.N) * np.sum(A * self.Uf[2]))
 
         return [ui, vi, wi]
 
@@ -179,15 +178,17 @@ class Velocity(object):
 
         """
 
-        return numba_interpolation_loop(xi,
-                                        self.L,
-                                        self.N,
-                                        self.K[0],
-                                        self.K[1],
-                                        self.K[2],
-                                        self.Uf[0],
-                                        self.Uf[1],
-                                        self.Uf[2])
+        return numba_interpolation_loop(
+            xi,
+            self.L,
+            self.N,
+            self.K[0],
+            self.K[1],
+            self.K[2],
+            self.Uf[0],
+            self.Uf[1],
+            self.Uf[2],
+        )
 
     # ========================================================================
     def energy_spectra(self):
@@ -225,45 +226,56 @@ class Velocity(object):
         # Setup
 
         # Initialize empty dataframe
-        df = pd.DataFrame(columns=['name', 'k', 'E'])
+        df = pd.DataFrame(columns=["name", "k", "E"])
 
         # Our velocity data was generated with a real FFT. Fake the
         # data for the full FFT so we can get the spectra.
-        Ktmp = np.meshgrid(-self.k[0].astype(int),
-                           -self.k[1].astype(int),
-                           self.k[2][-2:0:-1].astype(int),
-                           indexing='ij')
-        Uf = [np.concatenate((self.Uf[c],
-                              np.conj(self.Uf[c][Ktmp[0],
-                                                 Ktmp[1],
-                                                 Ktmp[2]])),
-                             axis=2) for c in range(3)]
+        Ktmp = np.meshgrid(
+            -self.k[0].astype(int),
+            -self.k[1].astype(int),
+            self.k[2][-2:0:-1].astype(int),
+            indexing="ij",
+        )
+        Uf = [
+            np.concatenate(
+                (self.Uf[c], np.conj(self.Uf[c][Ktmp[0], Ktmp[1], Ktmp[2]])), axis=2
+            )
+            for c in range(3)
+        ]
 
         # Wavenumbers
-        k = [np.fft.fftfreq(Uf[0].shape[0]) * self.N[0],
-             np.fft.fftfreq(Uf[0].shape[1]) * self.N[1],
-             np.fft.fftfreq(Uf[0].shape[2]) * self.N[2]]
+        k = [
+            np.fft.fftfreq(Uf[0].shape[0]) * self.N[0],
+            np.fft.fftfreq(Uf[0].shape[1]) * self.N[1],
+            np.fft.fftfreq(Uf[0].shape[2]) * self.N[2],
+        ]
         kmax = [k[0].max(), k[1].max(), k[2].max()]
-        K = np.meshgrid(k[0], k[1], k[2], indexing='ij')
-        kmag = np.sqrt(K[0]**2 + K[1]**2 + K[2]**2)
+        K = np.meshgrid(k[0], k[1], k[2], indexing="ij")
+        kmag = np.sqrt(K[0] ** 2 + K[1] ** 2 + K[2] ** 2)
         halfN = np.array([int(n / 2) for n in self.N], dtype=np.int64)
-        kbins = np.hstack((-1e-16,
-                           np.arange(0.5, halfN[0] - 1),
-                           halfN[0] - 1))
+        kbins = np.hstack((-1e-16, np.arange(0.5, halfN[0] - 1), halfN[0] - 1))
 
         # Energy in Fourier space
-        Ef = 0.5 / (np.prod(self.N)**2) * (np.absolute(Uf[0])**2
-                                           + np.absolute(Uf[1])**2
-                                           + np.absolute(Uf[2])**2)
+        Ef = (
+            0.5
+            / (np.prod(self.N) ** 2)
+            * (
+                np.absolute(Uf[0]) ** 2
+                + np.absolute(Uf[1]) ** 2
+                + np.absolute(Uf[2]) ** 2
+            )
+        )
 
         # Filter the data with ellipsoid filter
-        ellipse = (K[0] / kmax[0])**2 \
-            + (K[1] / kmax[1])**2 \
-            + (K[2] / kmax[2])**2 <= 1.0
+        ellipse = (K[0] / kmax[0]) ** 2 + (K[1] / kmax[1]) ** 2 + (
+            K[2] / kmax[2]
+        ) ** 2 <= 1.0
         Ef = np.where(ellipse, Ef, np.nan)
-        K = np.where(ellipse, K[0], np.nan),\
-            np.where(ellipse, K[1], np.nan),\
-            np.where(ellipse, K[2], np.nan)
+        K = (
+            np.where(ellipse, K[0], np.nan),
+            np.where(ellipse, K[1], np.nan),
+            np.where(ellipse, K[2], np.nan),
+        )
         kmag = np.where(ellipse, kmag, np.nan)
 
         # 1D spectra Eii(kj)
@@ -278,22 +290,21 @@ class Velocity(object):
             # Average in each wavenumber bin
             E = np.zeros(len(kbins) - 2)
             for k, n in enumerate(range(1, len(kbins) - 1)):
-                area = np.pi * kmax[jm] * kmax[jn] * \
-                    np.sqrt(1 - (k / kmax[j])**2)
+                area = np.pi * kmax[jm] * kmax[jn] * np.sqrt(1 - (k / kmax[j]) ** 2)
                 E[k] = np.mean(Ef.flat[whichbin == n]) * area
             E[E < 1e-13] = 0.0
 
             # Store the data
-            subdf = pd.DataFrame(columns=['name', 'k', 'E'])
-            subdf['k'] = np.arange(0, kmax[j])
-            subdf['E'] = E
-            subdf['name'] = 'E{0:d}{0:d}(k{1:d})'.format(j, j)
+            subdf = pd.DataFrame(columns=["name", "k", "E"])
+            subdf["k"] = np.arange(0, kmax[j])
+            subdf["E"] = E
+            subdf["name"] = "E{0:d}{0:d}(k{1:d})".format(j, j)
             df = pd.concat([df, subdf], ignore_index=True)
 
         # 3D spectrum
 
         # Multiply spectra by the surface area of the sphere at kmag.
-        E3D = 4.0 * np.pi * kmag**2 * Ef
+        E3D = 4.0 * np.pi * kmag ** 2 * Ef
 
         # Binning
         whichbin = np.digitize(kmag.flat, kbins, right=True)
@@ -308,10 +319,10 @@ class Velocity(object):
         E[E < 1e-13] = 0.0
 
         # Store the data
-        subdf = pd.DataFrame(columns=['name', 'k', 'E'])
-        subdf['k'] = kavg
-        subdf['E'] = E
-        subdf['name'] = 'E3D'
+        subdf = pd.DataFrame(columns=["name", "k", "E"])
+        subdf["k"] = kavg
+        subdf["E"] = E
+        subdf["name"] = "E3D"
         df = pd.concat([df, subdf], ignore_index=True)
 
         return df
@@ -335,27 +346,38 @@ class Velocity(object):
 
         # Our velocity data was generated with a real FFT. Fake the
         # data for the full FFT so we can get the spectra.
-        Ktmp = np.meshgrid(-self.k[0].astype(int),
-                           -self.k[1].astype(int),
-                           self.k[2][-2:0:-1].astype(int),
-                           indexing='ij')
-        Uf = [np.concatenate((self.Uf[c],
-                              np.conj(self.Uf[c][Ktmp[0],
-                                                 Ktmp[1],
-                                                 Ktmp[2]])),
-                             axis=2) for c in range(3)]
+        Ktmp = np.meshgrid(
+            -self.k[0].astype(int),
+            -self.k[1].astype(int),
+            self.k[2][-2:0:-1].astype(int),
+            indexing="ij",
+        )
+        Uf = [
+            np.concatenate(
+                (self.Uf[c], np.conj(self.Uf[c][Ktmp[0], Ktmp[1], Ktmp[2]])), axis=2
+            )
+            for c in range(3)
+        ]
 
         # Wavenumbers
-        k = [np.fft.fftfreq(Uf[0].shape[0]) * self.N[0],
-             np.fft.fftfreq(Uf[0].shape[1]) * self.N[1],
-             np.fft.fftfreq(Uf[0].shape[2]) * self.N[2]]
-        K = np.meshgrid(k[0], k[1], k[2], indexing='ij')
-        kmag2 = K[0]**2 + K[1]**2 + K[2]**2
+        k = [
+            np.fft.fftfreq(Uf[0].shape[0]) * self.N[0],
+            np.fft.fftfreq(Uf[0].shape[1]) * self.N[1],
+            np.fft.fftfreq(Uf[0].shape[2]) * self.N[2],
+        ]
+        K = np.meshgrid(k[0], k[1], k[2], indexing="ij")
+        kmag2 = K[0] ** 2 + K[1] ** 2 + K[2] ** 2
 
         # Energy in Fourier space
-        Ef = 0.5 / (np.prod(self.N)**2) * (np.absolute(Uf[0])**2
-                                           + np.absolute(Uf[1])**2
-                                           + np.absolute(Uf[2])**2)
+        Ef = (
+            0.5
+            / (np.prod(self.N) ** 2)
+            * (
+                np.absolute(Uf[0]) ** 2
+                + np.absolute(Uf[1]) ** 2
+                + np.absolute(Uf[2]) ** 2
+            )
+        )
 
         return 2.0 * viscosity * np.sum(kmag2 * Ef)
 
@@ -384,17 +406,20 @@ class Velocity(object):
                 Uf = np.fft.rfft(self.U[i], axis=j)
 
                 if j == 0:
-                    Rii = np.sum(np.fft.irfft(Uf * np.conj(Uf),
-                                              axis=j)[:halfN[i] + 1, :, :],
-                                 axis=(idxm, idxn))
+                    Rii = np.sum(
+                        np.fft.irfft(Uf * np.conj(Uf), axis=j)[: halfN[i] + 1, :, :],
+                        axis=(idxm, idxn),
+                    )
                 elif j == 1:
-                    Rii = np.sum(np.fft.irfft(Uf * np.conj(Uf),
-                                              axis=j)[:, :halfN[i] + 1, :],
-                                 axis=(idxm, idxn))
+                    Rii = np.sum(
+                        np.fft.irfft(Uf * np.conj(Uf), axis=j)[:, : halfN[i] + 1, :],
+                        axis=(idxm, idxn),
+                    )
                 elif j == 2:
-                    Rii = np.sum(np.fft.irfft(Uf * np.conj(Uf),
-                                              axis=j)[:, :, :halfN[i] + 1],
-                                 axis=(idxm, idxn))
+                    Rii = np.sum(
+                        np.fft.irfft(Uf * np.conj(Uf), axis=j)[:, :, : halfN[i] + 1],
+                        axis=(idxm, idxn),
+                    )
                 Rii = Rii / np.prod(self.N)
                 Lij[i, j] = spi.simps(Rii, dx=dr[j]) / Rii[0]
 
@@ -420,19 +445,22 @@ class Velocity(object):
         ST2 = np.zeros(halfN[0] + 1)
         for i in range(self.N[0]):
             for r in range(halfN[0] + 1):
-                SL[r] += np.sum((self.U[0][(i + r) %
-                                           self.N[0], :, :] - self.U[0][i, :, :])**2)
-                ST1[r] += np.sum((self.U[1][(i + r) %
-                                            self.N[0], :, :] - self.U[1][i, :, :])**2)
-                ST2[r] += np.sum((self.U[2][(i + r) %
-                                            self.N[0], :, :] - self.U[2][i, :, :])**2)
+                SL[r] += np.sum(
+                    (self.U[0][(i + r) % self.N[0], :, :] - self.U[0][i, :, :]) ** 2
+                )
+                ST1[r] += np.sum(
+                    (self.U[1][(i + r) % self.N[0], :, :] - self.U[1][i, :, :]) ** 2
+                )
+                ST2[r] += np.sum(
+                    (self.U[2][(i + r) % self.N[0], :, :] - self.U[2][i, :, :]) ** 2
+                )
 
         # Store the data
-        df = pd.DataFrame(columns=['r', 'SL', 'ST1', 'ST2'])
-        df['r'] = self.L[0] / self.N[0] * np.arange(halfN[0] + 1)
-        df['SL'] = SL / np.prod(self.N)
-        df['ST1'] = ST1 / np.prod(self.N)
-        df['ST2'] = ST2 / np.prod(self.N)
+        df = pd.DataFrame(columns=["r", "SL", "ST1", "ST2"])
+        df["r"] = self.L[0] / self.N[0] * np.arange(halfN[0] + 1)
+        df["SL"] = SL / np.prod(self.N)
+        df["ST1"] = ST1 / np.prod(self.N)
+        df["ST2"] = ST2 / np.prod(self.N)
 
         return df
 
@@ -477,9 +505,16 @@ def numba_interpolation_loop(xi, L, N, Kx, Ky, Kz, Uf, Vf, Wf):
         for j in prange(Kx.shape[1]):
             for k in prange(Kx.shape[2]):
 
-                a = np.exp(2 * np.pi * 1j * (xi[0] * Kx[i, j, k] / L[0] +
-                                             xi[1] * Ky[i, j, k] / L[1] +
-                                             xi[2] * Kz[i, j, k] / L[2]))
+                a = np.exp(
+                    2
+                    * np.pi
+                    * 1j
+                    * (
+                        xi[0] * Kx[i, j, k] / L[0]
+                        + xi[1] * Ky[i, j, k] / L[1]
+                        + xi[2] * Kz[i, j, k] / L[2]
+                    )
+                )
 
                 ui += a * Uf[i, j, k]
                 vi += a * Vf[i, j, k]

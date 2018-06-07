@@ -48,7 +48,7 @@ class Data:
         y = np.arange(0, self.L[1], self.dx[1])
         z = np.arange(0, self.L[2], self.dx[2])
 
-        X, Y, Z = np.meshgrid(x, y, z, indexing='ij')
+        X, Y, Z = np.meshgrid(x, y, z, indexing="ij")
         self.U = velocity_x([X, Y, Z])
         self.V = velocity_y([X, Y, Z])
         self.W = velocity_z([X, Y, Z])
@@ -66,8 +66,4 @@ class Data:
         :type fname: string
 
         """
-        np.savez_compressed(fname,
-                            L=self.L,
-                            uf=self.Uf,
-                            vf=self.Vf,
-                            wf=self.Wf)
+        np.savez_compressed(fname, L=self.L, uf=self.Uf, vf=self.Vf, wf=self.Wf)

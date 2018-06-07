@@ -17,7 +17,7 @@ from ..constants import constants
 #
 # ========================================================================
 class DG:
-    'Discontinuous Galerkin projections.'
+    "Discontinuous Galerkin projections."
 
     # ========================================================================
     def __init__(self):

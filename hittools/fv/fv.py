@@ -20,7 +20,7 @@ from nufft import nufft3d2
 #
 # ========================================================================
 class FV:
-    'Finite volume projections.'
+    "Finite volume projections."
 
     # ========================================================================
     def __init__(self, N_E, xmin, xmax):
@@ -40,24 +40,27 @@ class FV:
         self.xmax = np.array([xmax[0], xmax[1], xmax[2]], dtype=np.float64)
         self.L = self.xmax - self.xmin
         self.dx = self.L / np.asarray(self.N_E, dtype=np.float64)
-        self.xc = [np.linspace(self.xmin[0] + 0.5 * self.dx[0],
-                               self.xmax[0] - 0.5 * self.dx[0],
-                               self.N_E[0]),
-                   np.linspace(self.xmin[1] + 0.5 * self.dx[1],
-                               self.xmax[1] - 0.5 * self.dx[1],
-                               self.N_E[1]),
-                   np.linspace(self.xmin[2] + 0.5 * self.dx[2],
-                               self.xmax[2] - 0.5 * self.dx[2],
-                               self.N_E[2])]
+        self.xc = [
+            np.linspace(
+                self.xmin[0] + 0.5 * self.dx[0],
+                self.xmax[0] - 0.5 * self.dx[0],
+                self.N_E[0],
+            ),
+            np.linspace(
+                self.xmin[1] + 0.5 * self.dx[1],
+                self.xmax[1] - 0.5 * self.dx[1],
+                self.N_E[1],
+            ),
+            np.linspace(
+                self.xmin[2] + 0.5 * self.dx[2],
+                self.xmax[2] - 0.5 * self.dx[2],
+                self.N_E[2],
+            ),
+        ]
 
-        self.XC = np.meshgrid(self.xc[0],
-                              self.xc[1],
-                              self.xc[2],
-                              indexing='ij')
+        self.XC = np.meshgrid(self.xc[0], self.xc[1], self.xc[2], indexing="ij")
 
-        self.U = [np.zeros(self.N_E),
-                  np.zeros(self.N_E),
-                  np.zeros(self.N_E)]
+        self.U = [np.zeros(self.N_E), np.zeros(self.N_E), np.zeros(self.N_E)]
 
     # ========================================================================
     def projection(self, velocities):
@@ -79,8 +82,7 @@ class FV:
         """
 
         def f(z, y, x, component):
-            return velocities.numba_get_interpolated_velocity([x, y, z])[
-                component]
+            return velocities.numba_get_interpolated_velocity([x, y, z])[component]
 
         for i in range(self.N_E[0]):
             for j in range(self.N_E[1]):
@@ -90,23 +92,32 @@ class FV:
                     yi = self.XC[1][i, j, k]
                     zi = self.XC[2][i, j, k]
 
-                    lbnd = [xi - 0.5 * self.dx[0],
-                            yi - 0.5 * self.dx[1],
-                            zi - 0.5 * self.dx[2]]
-                    rbnd = [xi + 0.5 * self.dx[0],
-                            yi + 0.5 * self.dx[1],
-                            zi + 0.5 * self.dx[2]]
+                    lbnd = [
+                        xi - 0.5 * self.dx[0],
+                        yi - 0.5 * self.dx[1],
+                        zi - 0.5 * self.dx[2],
+                    ]
+                    rbnd = [
+                        xi + 0.5 * self.dx[0],
+                        yi + 0.5 * self.dx[1],
+                        zi + 0.5 * self.dx[2],
+                    ]
 
                     for component in range(3):
-                        self.U[component][i, j, k] = 1. / np.prod(self.dx) * \
-                            spi.tplquad(f,
-                                        lbnd[0],
-                                        rbnd[0],
-                                        lambda x: lbnd[1],
-                                        lambda x: rbnd[1],
-                                        lambda x, y: lbnd[2],
-                                        lambda x, y: rbnd[2],
-                                        args=(component,))[0]
+                        self.U[component][i, j, k] = (
+                            1.
+                            / np.prod(self.dx)
+                            * spi.tplquad(
+                                f,
+                                lbnd[0],
+                                rbnd[0],
+                                lambda x: lbnd[1],
+                                lambda x: rbnd[1],
+                                lambda x, y: lbnd[2],
+                                lambda x, y: rbnd[2],
+                                args=(component,),
+                            )[0]
+                        )
 
     # ========================================================================
     def fast_projection(self, velocities, order=4):
@@ -124,14 +135,12 @@ class FV:
         """
 
         xg, wg = leg.leggauss(order + 1)
-        XG = np.meshgrid(xg, xg, xg, indexing='ij')
-        WG = np.meshgrid(wg, wg, wg, indexing='ij')
+        XG = np.meshgrid(xg, xg, xg, indexing="ij")
+        WG = np.meshgrid(wg, wg, wg, indexing="ij")
         W3G = WG[0] * WG[1] * WG[2]
         N_G = len(xg)
 
-        u = [np.zeros(XG[0].shape),
-             np.zeros(XG[1].shape),
-             np.zeros(XG[2].shape)]
+        u = [np.zeros(XG[0].shape), np.zeros(XG[1].shape), np.zeros(XG[2].shape)]
 
         for i in range(self.N_E[0]):
             for j in range(self.N_E[1]):
@@ -141,12 +150,16 @@ class FV:
                     yi = self.XC[1][i, j, k]
                     zi = self.XC[2][i, j, k]
 
-                    lbnd = [xi - 0.5 * self.dx[0],
-                            yi - 0.5 * self.dx[1],
-                            zi - 0.5 * self.dx[2]]
-                    rbnd = [xi + 0.5 * self.dx[0],
-                            yi + 0.5 * self.dx[1],
-                            zi + 0.5 * self.dx[2]]
+                    lbnd = [
+                        xi - 0.5 * self.dx[0],
+                        yi - 0.5 * self.dx[1],
+                        zi - 0.5 * self.dx[2],
+                    ]
+                    rbnd = [
+                        xi + 0.5 * self.dx[0],
+                        yi + 0.5 * self.dx[1],
+                        zi + 0.5 * self.dx[2],
+                    ]
 
                     xloc = lbnd[0] + 0.5 * self.dx[0] * (1 + XG[0])
                     yloc = lbnd[1] + 0.5 * self.dx[1] * (1 + XG[1])
@@ -155,12 +168,20 @@ class FV:
                     for ig in range(N_G):
                         for jg in range(N_G):
                             for kg in range(N_G):
-                                u[0][ig, jg, kg], u[1][ig, jg, kg], u[2][ig, jg, kg] = velocities.numba_get_interpolated_velocity(
-                                    [xloc[ig, jg, kg], yloc[ig, jg, kg], zloc[ig, jg, kg]])
+                                u[0][ig, jg, kg], u[1][ig, jg, kg], u[2][
+                                    ig, jg, kg
+                                ] = velocities.numba_get_interpolated_velocity(
+                                    [
+                                        xloc[ig, jg, kg],
+                                        yloc[ig, jg, kg],
+                                        zloc[ig, jg, kg],
+                                    ]
+                                )
 
                     for component in range(3):
-                        self.U[component][i, j, k] = 0.5**3 * \
-                            np.sum(W3G * u[component])
+                        self.U[component][i, j, k] = 0.5 ** 3 * np.sum(
+                            W3G * u[component]
+                        )
 
     # ========================================================================
     def fast_projection_nufft(self, velocities, order=4, eps=1e-13):
@@ -180,50 +201,59 @@ class FV:
         """
 
         xg, wg = leg.leggauss(order + 1)
-        XG = np.meshgrid(xg, xg, xg, indexing='ij')
-        WG = np.meshgrid(wg, wg, wg, indexing='ij')
+        XG = np.meshgrid(xg, xg, xg, indexing="ij")
+        WG = np.meshgrid(wg, wg, wg, indexing="ij")
         N_G = len(xg)
 
         # Our velocity data was generated with a real FFT. Fake the
         # data for the full FFT so we can use NUFFT.
-        K = np.meshgrid(-velocities.k[0].astype(int),
-                        -velocities.k[1].astype(int),
-                        velocities.k[2][-2:0:-1].astype(int),
-                        indexing='ij')
-        Uf = [np.concatenate((velocities.Uf[c],
-                              np.conj(velocities.Uf[c][K[0],
-                                                       K[1],
-                                                       K[2]])),
-                             axis=2) for c in range(3)]
+        K = np.meshgrid(
+            -velocities.k[0].astype(int),
+            -velocities.k[1].astype(int),
+            velocities.k[2][-2:0:-1].astype(int),
+            indexing="ij",
+        )
+        Uf = [
+            np.concatenate(
+                (velocities.Uf[c], np.conj(velocities.Uf[c][K[0], K[1], K[2]])), axis=2
+            )
+            for c in range(3)
+        ]
 
         # Get all the quadrature node coordinates.
         # They are ordered in (x,y,z,xg,yg,zg) and flattened
-        xis = np.zeros((np.prod(self.N_E) * N_G**3, 3))
-        xis[:, 0] = np.add.outer(self.XC[0],
-                                 0.5 * self.dx[0] * XG[0]).reshape(-1)
-        xis[:, 1] = np.add.outer(self.XC[1],
-                                 0.5 * self.dx[1] * XG[1]).reshape(-1)
-        xis[:, 2] = np.add.outer(self.XC[2],
-                                 0.5 * self.dx[2] * XG[2]).reshape(-1)
+        xis = np.zeros((np.prod(self.N_E) * N_G ** 3, 3))
+        xis[:, 0] = np.add.outer(self.XC[0], 0.5 * self.dx[0] * XG[0]).reshape(-1)
+        xis[:, 1] = np.add.outer(self.XC[1], 0.5 * self.dx[1] * XG[1]).reshape(-1)
+        xis[:, 2] = np.add.outer(self.XC[2], 0.5 * self.dx[2] * XG[2]).reshape(-1)
 
         # Use NUFFT to get the velocities
         w3g = np.reshape(WG[0] * WG[1] * WG[2], -1)
         for c in range(3):
-            u = np.reshape(np.real(nufft3d2(xis[:, 0],
-                                            xis[:, 1],
-                                            xis[:, 2],
-                                            np.roll(np.roll(np.roll(Uf[c],
-                                                                    -int(velocities.N[0] / 2),
-                                                                    0),
-                                                            -int(velocities.N[1] / 2),
-                                                            1),
-                                                    -int(velocities.N[2] / 2),
-                                                    2),
-                                            iflag=1,
-                                            eps=eps)) / velocities.N.prod(),
-                           (self.N_E[0], self.N_E[1], self.N_E[2], -1))
+            u = np.reshape(
+                np.real(
+                    nufft3d2(
+                        xis[:, 0],
+                        xis[:, 1],
+                        xis[:, 2],
+                        np.roll(
+                            np.roll(
+                                np.roll(Uf[c], -int(velocities.N[0] / 2), 0),
+                                -int(velocities.N[1] / 2),
+                                1,
+                            ),
+                            -int(velocities.N[2] / 2),
+                            2,
+                        ),
+                        iflag=1,
+                        eps=eps,
+                    )
+                )
+                / velocities.N.prod(),
+                (self.N_E[0], self.N_E[1], self.N_E[2], -1),
+            )
 
-            self.U[c] = 0.5**3 * np.sum(w3g * u, axis=-1)
+            self.U[c] = 0.5 ** 3 * np.sum(w3g * u, axis=-1)
 
     # ========================================================================
     def interpolation(self, velocities):
@@ -243,8 +273,9 @@ class FV:
                     yi = self.XC[1][i, j, k]
                     zi = self.XC[2][i, j, k]
 
-                    self.U[0][i, j, k], self.U[1][i, j, k], self.U[2][i, j,
-                                                                      k] = velocities.numba_get_interpolated_velocity([xi, yi, zi])
+                    self.U[0][i, j, k], self.U[1][i, j, k], self.U[2][
+                        i, j, k
+                    ] = velocities.numba_get_interpolated_velocity([xi, yi, zi])
 
     # ========================================================================
     def to_df(self):
@@ -256,9 +287,13 @@ class FV:
 
         """
 
-        return pd.DataFrame({'x': self.XC[0].flatten(),
-                             'y': self.XC[1].flatten(),
-                             'z': self.XC[2].flatten(),
-                             'u': self.U[0].flatten(),
-                             'v': self.U[1].flatten(),
-                             'w': self.U[2].flatten()})
+        return pd.DataFrame(
+            {
+                "x": self.XC[0].flatten(),
+                "y": self.XC[1].flatten(),
+                "z": self.XC[2].flatten(),
+                "u": self.U[0].flatten(),
+                "v": self.U[1].flatten(),
+                "w": self.U[2].flatten(),
+            }
+        )

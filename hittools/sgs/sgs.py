@@ -18,7 +18,7 @@ from ..constants import constants
 
 
 class SGS:
-    'Subgrid scale data using spectral information.'
+    "Subgrid scale data using spectral information."
 
     # ========================================================================
     def __init__(self):
@@ -74,9 +74,7 @@ class SGS:
         dwdx = self.filtered.get_velocity_derivative(2, 0)
         dwdy = self.filtered.get_velocity_derivative(2, 1)
         dwdz = self.filtered.get_velocity_derivative(2, 2)
-        DuDx = [[dudx, dudy, dudz],
-                [dvdx, dvdy, dvdz],
-                [dwdx, dwdy, dwdz]]
+        DuDx = [[dudx, dudy, dudz], [dvdx, dvdy, dvdz], [dwdx, dwdy, dwdz]]
 
         # Rate of strain
         S00 = DuDx[0][0]
@@ -85,36 +83,42 @@ class SGS:
         S11 = DuDx[1][1]
         S12 = 0.5 * (DuDx[1][2] + DuDx[2][1])
         S22 = DuDx[2][2]
-        Sij = [[S00, S01, S02],
-               [S01, S11, S12],
-               [S02, S12, S22]]
+        Sij = [[S00, S01, S02], [S01, S11, S12], [S02, S12, S22]]
 
         Sijmag = 0.0
         for i in range(3):
             for j in range(3):
-                Sijmag += Sij[i][j]**2
+                Sijmag += Sij[i][j] ** 2
         Sijmag = np.sqrt(2.0 * Sijmag)
 
         Skk = S00 + S11 + S22
 
         # SGS shear stress
         deltabar = self.width * self.filtered.dx[0]
-        self.mut = self.constants.rho * deltabar**2 * Sijmag
+        self.mut = self.constants.rho * deltabar ** 2 * Sijmag
 
         self.tau_sgs_kk = 2.0 * self.constants.CI * self.mut * Sijmag
 
-        tau_sgs_00 = -2.0 * self.constants.Cs**2 * self.mut * \
-            (Sij[0][0] - Skk / 3.) + self.tau_sgs_kk / 3.
-        tau_sgs_01 = -2.0 * self.constants.Cs**2 * self.mut * Sij[0][1]
-        tau_sgs_02 = -2.0 * self.constants.Cs**2 * self.mut * Sij[0][2]
+        tau_sgs_00 = (
+            -2.0 * self.constants.Cs ** 2 * self.mut * (Sij[0][0] - Skk / 3.)
+            + self.tau_sgs_kk / 3.
+        )
+        tau_sgs_01 = -2.0 * self.constants.Cs ** 2 * self.mut * Sij[0][1]
+        tau_sgs_02 = -2.0 * self.constants.Cs ** 2 * self.mut * Sij[0][2]
 
-        tau_sgs_11 = -2.0 * self.constants.Cs**2 * self.mut * \
-            (Sij[1][1] - Skk / 3.) + self.tau_sgs_kk / 3.
-        tau_sgs_12 = -2.0 * self.constants.Cs**2 * self.mut * Sij[1][2]
+        tau_sgs_11 = (
+            -2.0 * self.constants.Cs ** 2 * self.mut * (Sij[1][1] - Skk / 3.)
+            + self.tau_sgs_kk / 3.
+        )
+        tau_sgs_12 = -2.0 * self.constants.Cs ** 2 * self.mut * Sij[1][2]
 
-        tau_sgs_22 = -2.0 * self.constants.Cs**2 * self.mut * \
-            (Sij[2][2] - Skk / 3.) + self.tau_sgs_kk / 3.
+        tau_sgs_22 = (
+            -2.0 * self.constants.Cs ** 2 * self.mut * (Sij[2][2] - Skk / 3.)
+            + self.tau_sgs_kk / 3.
+        )
 
-        self.tau_sgs = [[tau_sgs_00, tau_sgs_01, tau_sgs_02],
-                        [tau_sgs_01, tau_sgs_11, tau_sgs_12],
-                        [tau_sgs_02, tau_sgs_12, tau_sgs_22]]
+        self.tau_sgs = [
+            [tau_sgs_00, tau_sgs_01, tau_sgs_02],
+            [tau_sgs_01, tau_sgs_11, tau_sgs_12],
+            [tau_sgs_02, tau_sgs_12, tau_sgs_22],
+        ]

@@ -2,7 +2,7 @@
 
 #PBS -l walltime=96:00:00  # WALLTIME limit
 #PBS -q bigmem  # queue
-#PBS -l nodes=32:ppn=16  # Number of nodes, put x processes on each
+#PBS -l nodes=12:ppn=16  # Number of nodes, put x processes on each
 #PBS -lfeature=256GB
 #PBS -N project_fv  # Name of job
 #PBS -A ExaCT  # Project handle
@@ -14,7 +14,7 @@ cd $PBS_O_WORKDIR
 
 # Run the code
 module purge
-module use /nopt/nrel/ecom/ecp/base/b/spack/share/spack/modules/linux-centos7-x86_64/gcc-6.2.0
+module use /nopt/nrel/ecom/ecp/base/c/spack/share/spack/modules/linux-centos7-x86_64/gcc-6.2.0
 module load gcc/6.2.0
 module load texlive/live
 CONDA_PATH=${HOME}/miniconda3/bin
@@ -51,6 +51,20 @@ mpirun -np ${nprocs} ./project_fv.py -r ${res} --order 2 -f ../hittools/data/hit
 # 512^3
 res=512
 nprocs=64
+mpirun -np ${nprocs} ./project_fv.py -r ${res} --order 2 -f ../hittools/data/hit_ut_wavespace_256.npz -b
+./merge_bin.sh ${res} ${nprocs}
+./statistics.py -f hit_ic_ut_${res}.in -b
+
+# 640^3
+res=640
+nprocs=160
+mpirun -np ${nprocs} ./project_fv.py -r ${res} --order 2 -f ../hittools/data/hit_ut_wavespace_256.npz -b
+./merge_bin.sh ${res} ${nprocs}
+./statistics.py -f hit_ic_ut_${res}.in -b
+
+# 768^3
+res=768
+nprocs=192
 mpirun -np ${nprocs} ./project_fv.py -r ${res} --order 2 -f ../hittools/data/hit_ut_wavespace_256.npz -b
 ./merge_bin.sh ${res} ${nprocs}
 ./statistics.py -f hit_ic_ut_${res}.in -b
