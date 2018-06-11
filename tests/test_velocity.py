@@ -394,15 +394,15 @@ class VelocityTestCase(unittest.TestCase):
 
     def test_skewness(self):
         """Is the skewness calculation correct?"""
-        skewness = self.spec_velocities.normalized_velocity_derivative_moment(0, 3)
+        skewness = self.velocities.normalized_velocity_derivative_moment(0, 3)
 
-        npt.assert_almost_equal(skewness, 51.7389774006043481)
+        npt.assert_almost_equal(skewness, 0.0)
 
     def test_kurtosis(self):
         """Is the kurtosis calculation correct?"""
-        kurtosis = self.spec_velocities.normalized_velocity_derivative_moment(0, 4)
+        kurtosis = self.velocities.normalized_velocity_derivative_moment(0, 4)
 
-        npt.assert_almost_equal(kurtosis, 51.7389774006043481)
+        npt.assert_almost_equal(kurtosis, 4.495958726543728)
 
 
 if __name__ == "__main__":
