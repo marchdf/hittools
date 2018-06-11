@@ -62,10 +62,11 @@ class Velocity(object):
 
         # load the data
         data = np.load(fname)
-        Uf = [data["uf"], data["vf"], data["wf"]]
+        Uf = data["uf"], data["vf"], data["wf"]
 
         # Inverse fft to get spatial data
-        U = [np.fft.irfftn(Uf[c]) for c in range(3)]
+        U = [np.fft.irfftn(d) for d in Uf]
+
         return cls(data["L"], U, Uf=Uf)
 
     # ========================================================================
