@@ -392,6 +392,18 @@ class VelocityTestCase(unittest.TestCase):
 
         npt.assert_almost_equal(dissipation, 51.7389774006043481)
 
+    def test_skewness(self):
+        """Is the skewness calculation correct?"""
+        skewness = self.spec_velocities.normalized_velocity_derivative_moment(0, 3)
+
+        npt.assert_almost_equal(skewness, 51.7389774006043481)
+
+    def test_kurtosis(self):
+        """Is the kurtosis calculation correct?"""
+        kurtosis = self.spec_velocities.normalized_velocity_derivative_moment(0, 4)
+
+        npt.assert_almost_equal(kurtosis, 51.7389774006043481)
+
 
 if __name__ == "__main__":
     unittest.main()

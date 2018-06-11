@@ -463,6 +463,28 @@ class Velocity(object):
 
         return df
 
+    # ========================================================================
+    def normalized_velocity_derivative_moment(self, i, n):
+        """Calculate a normalized i-velocity derivative moment.
+
+        It is defined as (see Eq. 6.303 in Pope):
+
+        :math:`\\frac{\\left\\langle \\left(\\frac{\\partial u_i}{\\partial x_i}\\right)^n \\right\\rangle}{\\left\\langle \\left(\\frac{\\partial u_i}{\\partial x_i}\\right)^2 \\right\\rangle^{\\frac{n}{2}}}`
+
+        This gives the velocity skewness (:math:`n=3`) and kurtosis (:math:`n=4`).
+
+        :param i: velocity component
+        :type i: int
+        :param n: order of the moment
+        :type n: int
+        :return: normalized i-velocity derivative moment
+        :rtype: double
+        """
+
+        dudx = np.gradient(self.U[i], self.dx[i], axis=i)
+
+        return np.mean(dudx ** n) / (np.mean(dudx ** 2) ** (n / 2))
+
 
 # ========================================================================
 @jit(nopython=True, parallel=True)
